@@ -120,7 +120,7 @@ class OAuthController extends Controller
                     Auth::guard(config()->string('oauth.guard_name'))->logout();
 
                     return Redirect::route('filament.loki.auth.login')
-                    ->with(['message' => 'Your session has expired. Please log in again.']);
+                        ->with(['message' => 'Your session has expired. Please log in again.']);
                 }
 
                 /** @var Model $user */

@@ -39,6 +39,7 @@ class OAuthCommand extends Command
         info('Migrations have been executed.');
 
         info('OAuth package configured correctly!');
+
         return self::SUCCESS;
     }
 
