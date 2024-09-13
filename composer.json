@@ -1,0 +1,102 @@
+{
+    "name": "raiolanetworks/oauth",
+    "description": "Easily add OAuth2 access to your projects",
+    "keywords": [
+        "RaiolaNetworks",
+        "laravel",
+        "oauth"
+    ],
+    "homepage": "https://github.com/raiolanetworks/oauth",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Martín Gómez",
+            "email": "martin@raiolanetworks.es",
+            "homepage": "https://raiolanetworks.com",
+            "role": "Developer"
+        },
+        {
+            "name": "Víctor Escribano",
+            "email": "victores@raiolanetworks.es",
+            "role": "Developer"
+        }
+    ],
+    "require": {
+        "php": "^8.2",
+        "illuminate/contracts": "^10.0||^11.0",
+        "laravel/prompts": "^0.1.25",
+        "league/oauth2-client": "^2.7",
+        "livewire/livewire": "^3.5",
+        "spatie/laravel-package-tools": "^1.16"
+    },
+    "require-dev": {
+        "larastan/larastan": "^2.0",
+        "laravel/pint": "^1.14",
+        "nunomaduro/collision": "^8.1.1||^7.10.0",
+        "orchestra/testbench": "^9.4",
+        "pestphp/pest": "^2.34",
+        "pestphp/pest-plugin-arch": "^2.7",
+        "pestphp/pest-plugin-laravel": "^2.3"
+    },
+    "autoload": {
+        "psr-4": {
+            "Raiolanetworks\\OAuth\\": "src/",
+            "Raiolanetworks\\OAuth\\Database\\Factories\\": "database/factories/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Raiolanetworks\\OAuth\\Tests\\": "tests/",
+            "Workbench\\App\\": "workbench/app/",
+            "Workbench\\Database\\Factories\\": "workbench/database/factories/",
+            "Workbench\\Database\\Seeders\\": "workbench/database/seeders/"
+        }
+    },
+    "scripts": {
+        "post-autoload-dump": [
+            "@clear",
+            "@prepare",
+            "@composer run prepare"
+        ],
+        "clear": "@php vendor/bin/testbench package:purge-skeleton --ansi",
+        "prepare": "@php vendor/bin/testbench package:discover --ansi",
+        "build": "@php vendor/bin/testbench workbench:build --ansi",
+        "start": [
+            "Composer\\Config::disableProcessTimeout",
+            "@composer run build",
+            "@php vendor/bin/testbench serve"
+        ],
+        "analyse": "vendor/bin/phpstan analyse",
+        "test": "vendor/bin/pest",
+        "test-coverage": "vendor/bin/pest --coverage",
+        "format": "vendor/bin/pint",
+        "serve": [
+            "Composer\\Config::disableProcessTimeout",
+            "@build",
+            "@php vendor/bin/testbench serve --ansi"
+        ],
+        "lint": [
+            "@php vendor/bin/pint --ansi",
+            "@php vendor/bin/phpstan analyse --verbose --ansi"
+        ]
+    },
+    "config": {
+        "sort-packages": true,
+        "allow-plugins": {
+            "pestphp/pest-plugin": true,
+            "phpstan/extension-installer": true
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Raiolanetworks\\OAuth\\OAuthServiceProvider"
+            ],
+            "aliases": {
+                "OAuth": "Raiolanetworks\\OAuth\\Facades\\OAuth"
+            }
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}
