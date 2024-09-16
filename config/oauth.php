@@ -30,7 +30,7 @@ return [
     'guard_name'                 => 'web',
 
     // Route to redirect when callback response is Ok
-    'login_route'                => '/login',
+    'login_route_name'           => 'login',
     // Route to redirect when callback response is Ok
     'redirect_route_callback_ok' => '/',
 ];

@@ -6,7 +6,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
-use Raiolanetworks\OAuth\Tests\Models\TestUser;
 
 return new class extends Migration
 {
@@ -19,7 +18,7 @@ return new class extends Migration
             $table->string('oauth_id')->nullable();
             $table->longText('oauth_token')->nullable();
             $table->string('oauth_refresh_token')->nullable();
-            $table->integer('oauth_token_expires_at')->nullable();
+            $table->timestamp('oauth_token_expires_at')->nullable();
         });
     }
 

@@ -10,7 +10,6 @@ use Illuminate\Support\Str;
 use function Laravel\Prompts\info;
 use function Laravel\Prompts\select;
 use function Laravel\Prompts\text;
-use function Orchestra\Testbench\package_path;
 
 class OAuthCommand extends Command
 {
@@ -26,15 +25,16 @@ class OAuthCommand extends Command
         $this->setEnvironmentVariables();
         info('6 new variables have been created in the environment file “.env”.');
 
-        // Publish the config file
         $this->call('vendor:publish', [
             '--tag' => 'oauth-config',
             '--force',
         ]);
         info('The configuration file has been published.');
 
-        // Load migrations in migrations queue and run
+        info('Loading migrations...');
         app()->make('oauth')->loadMigrations();
+
+        info('Running migrations...');
         $this->call('migrate');
 
         info('Migrations have been executed.');
@@ -60,14 +60,14 @@ class OAuthCommand extends Command
         );
 
         $loginRoute = text(
-            label: 'Login route:',
-            placeholder: 'E.g. /login',
-            default: '/login',
+            label: 'Login route name:',
+            placeholder: 'E.g. login',
+            default: 'login',
         );
 
         config()->set('oauth.user_model_name', $modelName);
         config()->set('oauth.guard_name', $guardName);
-        config()->set('oauth.login_route', $loginRoute);
+        config()->set('oauth.login_route_name', $loginRoute);
     }
 
     protected function setEnvironmentVariables(): void
@@ -134,8 +134,8 @@ class OAuthCommand extends Command
         $class                = '\\' . Str::ucfirst(Str::replace('/', '\\', $value));
         $authenticatableClass = 'Illuminate\Contracts\Auth\Authenticatable';
 
-        if(app()->environment() === 'testing') {
-            $path                 = 'Tests/Models/TestUser.php';
+        if (app()->environment() === 'testing') {
+            $path = 'tests/Models/TestUser.php';
         }
 
         return match (true) {

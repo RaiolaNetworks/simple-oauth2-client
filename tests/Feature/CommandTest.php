@@ -12,7 +12,7 @@ it('run the install command', function () {
     $this->artisan('oauth:install')
         ->expectsQuestion('Model name Authenticatable:', TestUser::class)
         ->expectsQuestion('Main guard name:', 'web')
-        ->expectsQuestion('Login route:', '/login')
+        ->expectsQuestion('Login route name:', 'login')
         ->expectsQuestion('Oauth base url:', 'https://asgard.your.company')
         ->expectsQuestion('Oauth client ID:', 'CLIENTID')
         ->expectsQuestion('Oauth client secret key:', 'SECRETKEY')

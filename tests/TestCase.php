@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace Raiolanetworks\OAuth\Tests;
 
-use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Config;
 use Orchestra\Testbench\TestCase as Orchestra;
 use Raiolanetworks\OAuth\OAuthServiceProvider;
+use Raiolanetworks\OAuth\Tests\Models\TestUser;
 
 class TestCase extends Orchestra
 {
@@ -17,7 +18,15 @@ class TestCase extends Orchestra
     {
         parent::setUp();
 
-        $this->loadMigrationsFrom(__DIR__ . '/database/migrations');
+        Config::set('oauth.user_model_name', TestUser::class);
+
+        // Test migrations
+        $this->loadMigrationsFrom(realpath(__DIR__ . '/database/migrations'));
+
+        // Package migrations
+        $this->loadMigrationsFrom(realpath(__DIR__ . '/../database/migrations'));
+
+        $this->artisan('migrate')->run();
     }
 
     protected function getPackageProviders($app)
@@ -33,7 +42,6 @@ class TestCase extends Orchestra
         config()->set('database.connections.testing', [
             'driver'   => 'sqlite',
             'database' => ':memory:',
-            'prefix'   => '',
         ]);
     }
 }
