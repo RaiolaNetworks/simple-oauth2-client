@@ -2,37 +2,38 @@
 
 declare(strict_types=1);
 
-namespace Raiolanetworks\Oauth\Tests;
+namespace Raiolanetworks\OAuth\Tests;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Orchestra\Testbench\TestCase as Orchestra;
-use Raiolanetworks\Oauth\OauthServiceProvider;
+use Raiolanetworks\OAuth\OAuthServiceProvider;
 
 class TestCase extends Orchestra
 {
+    use RefreshDatabase;
+
     protected function setUp(): void
     {
         parent::setUp();
 
-        Factory::guessFactoryNamesUsing(
-            fn (string $modelName) => 'Raiolanetworks\\Oauth\\Database\\Factories\\' . class_basename($modelName) . 'Factory'
-        );
+        $this->loadMigrationsFrom(__DIR__ . '/database/migrations');
     }
 
     protected function getPackageProviders($app)
     {
         return [
-            OauthServiceProvider::class,
+            OAuthServiceProvider::class,
         ];
     }
 
     public function getEnvironmentSetUp($app)
     {
         config()->set('database.default', 'testing');
-
-        /*
-        $migration = include __DIR__.'/../database/migrations/create_oauth_table.php.stub';
-        $migration->up();
-        */
+        config()->set('database.connections.testing', [
+            'driver'   => 'sqlite',
+            'database' => ':memory:',
+            'prefix'   => '',
+        ]);
     }
 }

@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace Raiolanetworks\OAuth\Commands;
 
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 
 use function Laravel\Prompts\info;
 use function Laravel\Prompts\select;
 use function Laravel\Prompts\text;
+use function Orchestra\Testbench\package_path;
 
 class OAuthCommand extends Command
 {
@@ -36,6 +36,7 @@ class OAuthCommand extends Command
         // Load migrations in migrations queue and run
         app()->make('oauth')->loadMigrations();
         $this->call('migrate');
+
         info('Migrations have been executed.');
 
         info('OAuth package configured correctly!');
@@ -64,7 +65,7 @@ class OAuthCommand extends Command
             default: '/login',
         );
 
-        config()->set('oauth.user_model_name', "\'$modelName\'::class");
+        config()->set('oauth.user_model_name', $modelName);
         config()->set('oauth.guard_name', $guardName);
         config()->set('oauth.login_route', $loginRoute);
     }
@@ -129,9 +130,13 @@ class OAuthCommand extends Command
 
     protected function modelNameValidation(string $value): ?string
     {
-        $path                 = base_path($value . '.php');
+        $path                 = $value . '.php';
         $class                = '\\' . Str::ucfirst(Str::replace('/', '\\', $value));
         $authenticatableClass = 'Illuminate\Contracts\Auth\Authenticatable';
+
+        if(app()->environment() === 'testing') {
+            $path                 = 'Tests/Models/TestUser.php';
+        }
 
         return match (true) {
             file_exists($path) === false                                              => 'Incorrect model path.',
