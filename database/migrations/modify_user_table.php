@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('oauth_id')->nullable();
             $table->longText('oauth_token')->nullable();
             $table->string('oauth_refresh_token')->nullable();
-            $table->integer('oauth_token_expires_at')->nullable();
+            $table->timestamp('oauth_token_expires_at')->nullable();
         });
     }
 

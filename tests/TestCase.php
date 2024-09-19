@@ -2,37 +2,46 @@
 
 declare(strict_types=1);
 
-namespace Raiolanetworks\Oauth\Tests;
+namespace Raiolanetworks\OAuth\Tests;
 
-use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Config;
 use Orchestra\Testbench\TestCase as Orchestra;
-use Raiolanetworks\Oauth\OauthServiceProvider;
+use Raiolanetworks\OAuth\OAuthServiceProvider;
+use Raiolanetworks\OAuth\Tests\Models\TestUser;
 
 class TestCase extends Orchestra
 {
+    use RefreshDatabase;
+
     protected function setUp(): void
     {
         parent::setUp();
 
-        Factory::guessFactoryNamesUsing(
-            fn (string $modelName) => 'Raiolanetworks\\Oauth\\Database\\Factories\\' . class_basename($modelName) . 'Factory'
-        );
+        Config::set('oauth.user_model_name', TestUser::class);
+
+        // Test migrations
+        $this->loadMigrationsFrom(realpath(__DIR__ . '/database/migrations'));
+
+        // Package migrations
+        $this->loadMigrationsFrom(realpath(__DIR__ . '/../database/migrations'));
+
+        $this->artisan('migrate')->run();
     }
 
     protected function getPackageProviders($app)
     {
         return [
-            OauthServiceProvider::class,
+            OAuthServiceProvider::class,
         ];
     }
 
     public function getEnvironmentSetUp($app)
     {
         config()->set('database.default', 'testing');
-
-        /*
-        $migration = include __DIR__.'/../database/migrations/create_oauth_table.php.stub';
-        $migration->up();
-        */
+        config()->set('database.connections.testing', [
+            'driver'   => 'sqlite',
+            'database' => ':memory:',
+        ]);
     }
 }

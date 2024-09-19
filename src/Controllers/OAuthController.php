@@ -25,14 +25,17 @@ class OAuthController extends Controller
 {
     private OAuthService $provider;
 
-    public function __construct()
+    public function __construct(?OAuthService $provider = null)
     {
-        $this->provider = new OAuthService();
+        $this->provider = $provider ?? app(OAuthService::class);
     }
 
     public function request(): RedirectResponse|HttpFoundationRedirectResponse|Redirector
     {
-        if (Auth::guard(config()->string('oauth.guard_name'))->check()) {
+        /** @var string $guardName */
+        $guardName = config('oauth.guard_name');
+
+        if (Auth::guard($guardName)->check()) {
             return Redirect::to('/');
         }
 
@@ -50,7 +53,10 @@ class OAuthController extends Controller
 
     public function callback(): RedirectResponse
     {
-        if (Auth::guard(config()->string('oauth.guard_name'))->check()) {
+        /** @var string $guardName */
+        $guardName = config('oauth.guard_name');
+
+        if (Auth::guard($guardName)->check()) {
             return Redirect::intended();
         }
 
@@ -76,31 +82,39 @@ class OAuthController extends Controller
             ]);
 
             $callback = $this->provider->getResourceOwner($accessToken)->toArray();
-
-            $user = $this->updateOrCreateUser($callback, $accessToken);
+            $user     = $this->updateOrCreateUser($callback, $accessToken);
 
             EventsOAuthTokenUpdated::dispatch($user, $callback['groups']);
             Session::remove('oauth2-state');
             Session::remove('oauth2-pkceCode');
 
             /** @var Authenticatable $user */
-            Auth::guard(config()->string('oauth.guard_name'))->login($user);
+            Auth::guard($guardName)->login($user);
 
-            return Redirect::to(config()->string('oauth.redirect_route_callback_ok'));
+            /** @var string $redirectRouteCallbackOk */
+            $redirectRouteCallbackOk = config('oauth.redirect_route_callback_ok');
+
+            return Redirect::to($redirectRouteCallbackOk);
         } catch (IdentityProviderException|ClientException) {
-            return Redirect::route(config()->string('oauth.login_route'))
+            /** @var string $loginRouteName */
+            $loginRouteName = config('oauth.login_route_name');
+
+            return Redirect::route($loginRouteName)
                 ->with(['message' => 'Authentication failed. Please try again.']);
         }
     }
 
     public function renew(): null|\Illuminate\Routing\Redirector|RedirectResponse
     {
-        if (Auth::guard(config()->string('oauth.guard_name'))->check()) {
+        /** @var string $guardName */
+        $guardName = config('oauth.guard_name');
+
+        if (Auth::guard($guardName)->check()) {
             /** @var Authenticatable $user */
-            $user = Auth::guard(config()->string('oauth.guard_name'))->user();
+            $user = Auth::guard($guardName)->user();
 
             // @phpstan-ignore-next-line
-            if ($user->oauth_token !== null && $user->oauth_token_expires_at < Carbon::now()->timestamp) {
+            if ($user->oauth_token !== null && $user->oauth_token_expires_at->timestamp < Carbon::now()->timestamp) {
                 try {
                     /** @var \League\OAuth2\Client\Token\AccessToken $accessToken */
                     $accessToken = $this->provider->getAccessToken('refresh_token', [
@@ -117,9 +131,12 @@ class OAuthController extends Controller
                         'oauth_token_expires_at' => null,
                     ]);
 
-                    Auth::guard(config()->string('oauth.guard_name'))->logout();
+                    Auth::guard($guardName)->logout();
 
-                    return Redirect::route('filament.loki.auth.login')
+                    /** @var string $loginRouteName */
+                    $loginRouteName = config('oauth.login_route_name');
+
+                    return Redirect::route($loginRouteName)
                         ->with(['message' => 'Your session has expired. Please log in again.']);
                 }
 
@@ -143,7 +160,7 @@ class OAuthController extends Controller
     protected function updateOrCreateUser(array $callback, AccessTokenInterface $accessToken): Model
     {
         /** @var array<string,string> $groups */
-        $groups = $callback['groups'];
+        $groups = $callback['groups'] ?? [];
 
         /** @var Model $model */
         $model = config('oauth.user_model_name');
@@ -155,7 +172,7 @@ class OAuthController extends Controller
             ],
             [
                 'name'                   => $callback['name'],
-                'type'                   => in_array(config('services.oauth.admin_group'), $groups) ? 'admin' : 'user',
+                'type'                   => in_array(config('oauth.admin_group'), $groups) ? 'admin' : 'user',
                 'oauth_token'            => $accessToken->getToken(),
                 'oauth_refresh_token'    => $accessToken->getRefreshToken(),
                 'oauth_token_expires_at' => $accessToken->getExpires(),

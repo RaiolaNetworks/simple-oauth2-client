@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Raiolanetworks\OAuth\Commands;
 
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 
 use function Laravel\Prompts\info;
@@ -26,16 +25,18 @@ class OAuthCommand extends Command
         $this->setEnvironmentVariables();
         info('6 new variables have been created in the environment file “.env”.');
 
-        // Publish the config file
         $this->call('vendor:publish', [
             '--tag' => 'oauth-config',
             '--force',
         ]);
         info('The configuration file has been published.');
 
-        // Load migrations in migrations queue and run
+        info('Loading migrations...');
         app()->make('oauth')->loadMigrations();
+
+        info('Running migrations...');
         $this->call('migrate');
+
         info('Migrations have been executed.');
 
         info('OAuth package configured correctly!');
@@ -59,14 +60,14 @@ class OAuthCommand extends Command
         );
 
         $loginRoute = text(
-            label: 'Login route:',
-            placeholder: 'E.g. /login',
-            default: '/login',
+            label: 'Login route name:',
+            placeholder: 'E.g. login',
+            default: 'login',
         );
 
-        config()->set('oauth.user_model_name', "\'$modelName\'::class");
+        config()->set('oauth.user_model_name', $modelName);
         config()->set('oauth.guard_name', $guardName);
-        config()->set('oauth.login_route', $loginRoute);
+        config()->set('oauth.login_route_name', $loginRoute);
     }
 
     protected function setEnvironmentVariables(): void
@@ -129,9 +130,13 @@ class OAuthCommand extends Command
 
     protected function modelNameValidation(string $value): ?string
     {
-        $path                 = base_path($value . '.php');
+        $path                 = $value . '.php';
         $class                = '\\' . Str::ucfirst(Str::replace('/', '\\', $value));
         $authenticatableClass = 'Illuminate\Contracts\Auth\Authenticatable';
+
+        if (app()->environment() === 'testing') {
+            $path = 'tests/Models/TestUser.php';
+        }
 
         return match (true) {
             file_exists($path) === false                                              => 'Incorrect model path.',
