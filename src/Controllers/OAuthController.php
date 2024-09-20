@@ -15,19 +15,26 @@ use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Facades\Session;
 use League\OAuth2\Client\Provider\Exception\IdentityProviderException;
-use League\OAuth2\Client\Token\AccessTokenInterface;
 use Livewire\Features\SupportRedirects\Redirector;
+use Raiolanetworks\OAuth\Contracts\OAuthGroupHandlerInterface;
+use Raiolanetworks\OAuth\Contracts\OAuthUserHandlerInterface;
 use Raiolanetworks\OAuth\Events\EventsOAuthTokenUpdated;
 use Raiolanetworks\OAuth\Services\OAuthService;
 use Symfony\Component\HttpFoundation\RedirectResponse as HttpFoundationRedirectResponse;
 
 class OAuthController extends Controller
 {
-    private OAuthService $provider;
+    protected OAuthService $provider;
 
-    public function __construct(?OAuthService $provider = null)
+    protected OAuthUserHandlerInterface $userHandler;
+
+    protected OAuthGroupHandlerInterface $groupHandler;
+
+    public function __construct(?OAuthService $provider = null, ?OAuthUserHandlerInterface $userHandler = null, ?OAuthGroupHandlerInterface $groupHandler = null)
     {
-        $this->provider = $provider ?? app(OAuthService::class);
+        $this->provider     = $provider ?? app(OAuthService::class);
+        $this->userHandler  = $userHandler ?? app(OAuthUserHandlerInterface::class);
+        $this->groupHandler = $groupHandler ?? app(OAuthGroupHandlerInterface::class);
     }
 
     public function request(): RedirectResponse|HttpFoundationRedirectResponse|Redirector
@@ -82,7 +89,9 @@ class OAuthController extends Controller
             ]);
 
             $callback = $this->provider->getResourceOwner($accessToken)->toArray();
-            $user     = $this->updateOrCreateUser($callback, $accessToken);
+
+            $user = $this->userHandler->handleUser($callback, $accessToken);
+            $this->groupHandler->handleGroups($callback['groups'], $user);
 
             EventsOAuthTokenUpdated::dispatch($user, $callback['groups']);
             Session::remove('oauth2-state');
@@ -92,9 +101,9 @@ class OAuthController extends Controller
             Auth::guard($guardName)->login($user);
 
             /** @var string $redirectRouteCallbackOk */
-            $redirectRouteCallbackOk = config('oauth.redirect_route_callback_ok');
+            $redirectRouteCallbackOk = config('oauth.redirect_route_name_callback_ok');
 
-            return Redirect::to($redirectRouteCallbackOk);
+            return redirect()->route($redirectRouteCallbackOk);
         } catch (IdentityProviderException|ClientException) {
             /** @var string $loginRouteName */
             $loginRouteName = config('oauth.login_route_name');
@@ -152,31 +161,5 @@ class OAuthController extends Controller
         }
 
         return null;
-    }
-
-    /**
-     * @param array<mixed> $callback
-     */
-    protected function updateOrCreateUser(array $callback, AccessTokenInterface $accessToken): Model
-    {
-        /** @var array<string,string> $groups */
-        $groups = $callback['groups'] ?? [];
-
-        /** @var Model $model */
-        $model = config('oauth.user_model_name');
-
-        return (new $model())::updateOrCreate(
-            [
-                'email'    => $callback['email'],
-                'oauth_id' => $callback['sub'],
-            ],
-            [
-                'name'                   => $callback['name'],
-                'type'                   => in_array(config('oauth.admin_group'), $groups) ? 'admin' : 'user',
-                'oauth_token'            => $accessToken->getToken(),
-                'oauth_refresh_token'    => $accessToken->getRefreshToken(),
-                'oauth_token_expires_at' => $accessToken->getExpires(),
-            ]
-        );
     }
 }

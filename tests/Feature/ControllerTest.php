@@ -7,7 +7,6 @@ use Illuminate\Contracts\Auth\Guard;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Redirect;
-use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Session;
 use League\OAuth2\Client\Provider\Exception\IdentityProviderException;
 use League\OAuth2\Client\Token\AccessToken;
@@ -15,11 +14,16 @@ use League\OAuth2\Client\Token\AccessToken;
 use function Pest\Laravel\get;
 use function Pest\Laravel\instance;
 
+use Raiolanetworks\OAuth\Contracts\OAuthGroupHandlerInterface;
+use Raiolanetworks\OAuth\Contracts\OAuthUserHandlerInterface;
 use Raiolanetworks\OAuth\Controllers\OAuthController;
 use Raiolanetworks\OAuth\Services\OAuthService;
 use Raiolanetworks\OAuth\Tests\Models\TestUser;
 
 it('redirect authenticated users to the homepage', function () {
+    instance(OAuthUserHandlerInterface::class, Mockery::mock(OAuthUserHandlerInterface::class));
+    instance(OAuthGroupHandlerInterface::class, Mockery::mock(OAuthGroupHandlerInterface::class));
+
     $mockGuard = Mockery::mock(Guard::class);
     $mockGuard->shouldReceive('check')->andReturnTrue();
 
@@ -35,6 +39,9 @@ it('redirect authenticated users to the homepage', function () {
 
 /** @var TestCase $this */
 it('redirects unauthenticated users to the OAuth provider', function () {
+    instance(OAuthUserHandlerInterface::class, Mockery::mock(OAuthUserHandlerInterface::class));
+    instance(OAuthGroupHandlerInterface::class, Mockery::mock(OAuthGroupHandlerInterface::class));
+
     $mockGuard = Mockery::mock(Guard::class);
     $mockGuard->shouldReceive('check')->andReturnFalse();
 
@@ -65,6 +72,9 @@ it('redirects unauthenticated users to the OAuth provider', function () {
 });
 
 it('redirect where the user intends to go if authenticated in the callback', function () {
+    instance(OAuthUserHandlerInterface::class, Mockery::mock(OAuthUserHandlerInterface::class));
+    instance(OAuthGroupHandlerInterface::class, Mockery::mock(OAuthGroupHandlerInterface::class));
+
     $mockGuard = Mockery::mock(Guard::class);
     $mockGuard->shouldReceive('check')->andReturnTrue();
 
@@ -79,10 +89,8 @@ it('redirect where the user intends to go if authenticated in the callback', fun
 });
 
 it('handles invalid or missing code in callback', function () {
-    // Temporal route
-    Route::get('/login', function () {
-        return 'Login Page';
-    })->name(config('oauth.login_route_name'));
+    instance(OAuthUserHandlerInterface::class, Mockery::mock(OAuthUserHandlerInterface::class));
+    instance(OAuthGroupHandlerInterface::class, Mockery::mock(OAuthGroupHandlerInterface::class));
 
     Session::put('oauth2-state', 'correct_state');
 
@@ -96,10 +104,8 @@ it('handles invalid or missing code in callback', function () {
 });
 
 it('handles invalid state in callback', function () {
-    // Temporal route
-    Route::get('/login', function () {
-        return 'Login Page';
-    })->name(config('oauth.login_route_name'));
+    instance(OAuthUserHandlerInterface::class, Mockery::mock(OAuthUserHandlerInterface::class));
+    instance(OAuthGroupHandlerInterface::class, Mockery::mock(OAuthGroupHandlerInterface::class));
 
     $response = get(route('oauth.callback', [
         'code' => 'valid_code',
@@ -111,12 +117,9 @@ it('handles invalid state in callback', function () {
 });
 
 it('logs in the user after a successful OAuth callback', function () {
-    // Temporal route
-    Route::get('/login', function () {
-        return 'Login Page';
-    })->name(config('oauth.login_route_name'));
-
-    $mockOAuthService = Mockery::mock(OAuthService::class);
+    $mockOAuthService               = Mockery::mock(OAuthService::class);
+    $mockOAuthUserHandlerInterface  = Mockery::mock(OAuthUserHandlerInterface::class);
+    $mockOAuthGroupHandlerInterface = Mockery::mock(OAuthGroupHandlerInterface::class);
 
     $pkceCode  = 'valid_pkce_code';
     $stateCode = 'valid_state';
@@ -151,7 +154,14 @@ it('logs in the user after a successful OAuth callback', function () {
             ],
         ]));
 
+    $mockOAuthUserHandlerInterface->shouldReceive('handleUser')
+        ->andReturn(TestUser::factory()->create());
+    $mockOAuthGroupHandlerInterface->shouldReceive('handleGroups')
+        ->andReturn();
+
     instance(OAuthService::class, $mockOAuthService);
+    instance(OAuthUserHandlerInterface::class, $mockOAuthUserHandlerInterface);
+    instance(OAuthGroupHandlerInterface::class, $mockOAuthGroupHandlerInterface);
 
     Auth::shouldReceive('guard')
         ->with(config('oauth.guard_name'))
@@ -163,12 +173,14 @@ it('logs in the user after a successful OAuth callback', function () {
     ]));
 
     expect($response->getStatusCode())->toBe(302);
-    expect($response->headers->get('Location'))->toBe(Redirect::to(config('oauth.redirect_route_callback_ok'))->getTargetUrl());
+    expect($response->headers->get('Location'))->toBe(Redirect::route(config('oauth.redirect_route_name_callback_ok'))->getTargetUrl());
 });
 
 /** @var TestCase $this */
 it('renews the OAuth token if the user is authenticated and the token is expired', function () {
-    $mockOAuthService = Mockery::mock(OAuthService::class);
+    $mockOAuthService               = Mockery::mock(OAuthService::class);
+    $mockOAuthUserHandlerInterface  = Mockery::mock(OAuthUserHandlerInterface::class);
+    $mockOAuthGroupHandlerInterface = Mockery::mock(OAuthGroupHandlerInterface::class);
 
     $mockUser = TestUser::factory(state: [
         'oauth_token_expires_at' => Carbon::now()->subHour(),
@@ -196,7 +208,14 @@ it('renews the OAuth token if the user is authenticated and the token is expired
             'groups' => ['admin'],
         ]]));
 
+    $mockOAuthUserHandlerInterface->shouldReceive('handleUser')
+        ->andReturn(TestUser::factory()->create());
+    $mockOAuthGroupHandlerInterface->shouldReceive('handleGroups')
+        ->andReturn();
+
     instance(OAuthService::class, $mockOAuthService);
+    instance(OAuthUserHandlerInterface::class, $mockOAuthUserHandlerInterface);
+    instance(OAuthGroupHandlerInterface::class, $mockOAuthGroupHandlerInterface);
 
     $response = $this->app->make(OAuthController::class)->renew();
 
@@ -209,12 +228,9 @@ it('renews the OAuth token if the user is authenticated and the token is expired
 
 /** @var TestCase $this */
 it('logs out the user if there is an error during token renewal', function () {
-    // Temporal route
-    Route::get('/login', function () {
-        return 'Login Page';
-    })->name(config('oauth.login_route_name'));
-
-    $mockOAuthService = Mockery::mock(OAuthService::class);
+    $mockOAuthService               = Mockery::mock(OAuthService::class);
+    $mockOAuthUserHandlerInterface  = Mockery::mock(OAuthUserHandlerInterface::class);
+    $mockOAuthGroupHandlerInterface = Mockery::mock(OAuthGroupHandlerInterface::class);
 
     $mockUser = TestUser::factory(state: [
         'oauth_token_expires_at' => Carbon::now()->subHour(),
@@ -237,7 +253,14 @@ it('logs out the user if there is an error during token renewal', function () {
         ->with(config('oauth.guard_name'))
         ->andReturn(Mockery::mock(Guard::class, ['logout' => null]));
 
+    $mockOAuthUserHandlerInterface->shouldReceive('handleUser')
+        ->andReturn(TestUser::factory()->create());
+    $mockOAuthGroupHandlerInterface->shouldReceive('handleGroups')
+        ->andReturn();
+
     instance(OAuthService::class, $mockOAuthService);
+    instance(OAuthUserHandlerInterface::class, $mockOAuthUserHandlerInterface);
+    instance(OAuthGroupHandlerInterface::class, $mockOAuthGroupHandlerInterface);
 
     $response = $this->app->make(OAuthController::class)->renew();
 

@@ -1,10 +1,10 @@
 name: "🚀 Feature request"
 description: "Suggest a new feature or improvement for this project."
-title: "[FEATURE REQUEST] - "
+title: "feat: "
 labels:
   - "enhancement"
   - "feature request"
-assignees: ""
+assignees: []
 body:
   - type: markdown
     attributes:
@@ -53,8 +53,4 @@ body:
       label: "Feature priority"
       options:
         - label: "Critical"
-          description: "This feature is urgent and critical."
-        - label: "Important"
-          description: "This feature is important for the evolution of the project."
-        - label: "Nice to have"
-          description: "This feature would be good to have, but it's not critical."
+

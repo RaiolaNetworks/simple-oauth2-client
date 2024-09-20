@@ -65,9 +65,16 @@ class OAuthCommand extends Command
             default: 'login',
         );
 
+        $redirectCallbackOkRoute = text(
+            label: 'Route name when callback is OK:',
+            placeholder: 'E.g. home',
+            default: 'home',
+        );
+
         config()->set('oauth.user_model_name', $modelName);
         config()->set('oauth.guard_name', $guardName);
         config()->set('oauth.login_route_name', $loginRoute);
+        config()->set('oauth.redirect_route_name_callback_ok', $redirectCallbackOkRoute);
     }
 
     protected function setEnvironmentVariables(): void

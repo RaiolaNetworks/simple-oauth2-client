@@ -6,6 +6,7 @@ namespace Raiolanetworks\OAuth\Tests;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Route;
 use Orchestra\Testbench\TestCase as Orchestra;
 use Raiolanetworks\OAuth\OAuthServiceProvider;
 use Raiolanetworks\OAuth\Tests\Models\TestUser;
@@ -27,6 +28,8 @@ class TestCase extends Orchestra
         $this->loadMigrationsFrom(realpath(__DIR__ . '/../database/migrations'));
 
         $this->artisan('migrate')->run();
+
+        $this->declareTestRoutes();
     }
 
     protected function getPackageProviders($app)
@@ -43,5 +46,18 @@ class TestCase extends Orchestra
             'driver'   => 'sqlite',
             'database' => ':memory:',
         ]);
+
+        config()->set('app.key', 'base64:' . base64_encode(random_bytes(32)));
+    }
+
+    protected function declareTestRoutes(): void
+    {
+        Route::get('/login', function () {
+            return 'Login Page';
+        })->name(config('oauth.login_route_name'));
+
+        Route::get('/', function () {
+            return 'Home Page';
+        })->name(config('oauth.redirect_route_name_callback_ok'));
     }
 }

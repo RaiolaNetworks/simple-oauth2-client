@@ -17,7 +17,6 @@ class TestUser extends Model implements Authenticatable
         'email',
         'oauth_id',
         'name',
-        'type',
         'oauth_token',
         'oauth_refresh_token',
         'oauth_token_expires_at',

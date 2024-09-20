@@ -9,14 +9,6 @@ This OAuth for Laravel package provides a simple and reusable integration for im
 
 The package is designed to work flexibly with any user model that implements the Authenticatable interface, ensuring that it can be easily adapted to various projects without direct dependencies on a specific user model.
 
-<!-- ## Support us
-
-[<img src="https://github-ads.s3.eu-central-1.amazonaws.com/oauth.jpg?t=1" width="419px" />](https://spatie.be/github-ad-click/oauth)
-
-We invest a lot of resources into creating [best in class open source packages](https://spatie.be/open-source). You can support us by [buying one of our paid products](https://spatie.be/open-source/support-us).
-
-We highly appreciate you sending us a postcard from your hometown, mentioning which of our package(s) you are using. You'll find our address on [our contact page](https://spatie.be/about-us). We publish all received postcards on [our virtual postcard wall](https://spatie.be/open-source/postcards). -->
-
 ## Installation
 
 You can install the package via composer:
@@ -73,6 +65,29 @@ php artisan vendor:publish --tag="oauth-translations"
 ```
 
 ## Implementing the Package in the Project
+
+Before starting to develop the workflow, it is recommended to understand how the package works when creating or modifying users and groups.
+
+To achieve this, two interfaces have been created: [OAuthUserHandlerInterface](src/Contracts/OAuthUserHandlerInterface.php) and [OAuthGroupHandlerInterface](src/Contracts/OAuthGroupHandlerInterface.php). These interfaces can be implemented in the user model of your application, allowing you to override the `handleUser()` and `handleGroup()` methods, respectively.
+
+There are also two predefined classes: [BaseOAuthUserHandler](src/Handlers/BaseOAuthUserHandler.php) and [BaseOAuthGroupHandler](src/Handlers/BaseOAuthGroupHandler.php), which implement these interfaces with default logic. These will serve as an example for the developer and will also help, if it is a simple application, for the package to work without having to overwrite anything.
+
+**IMPORTANT**
+
+It is likely necessary to implement these interfaces to override the logic for handling the users and groups returned by the OAuth service.
+
+However, **do not forget** to override the `user_handler` and `group_handler` variables in the [configuration file](config/oauth.php), specifying which model will override the interface methods.
+
+```php
+return [
+    ...
+
+    'user_handler'  => App\Models\User::class,
+    'group_handler' => App\Models\User::class,
+];
+```
+
+---
 
 Once you have installed the package in your project, the next step is to configure your own login flow. This can be done through a button, link, or any other interface element that triggers a function in a controller. In this function, you'll implement the package and call the `request()` function:
 

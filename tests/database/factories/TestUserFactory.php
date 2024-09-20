@@ -36,7 +36,6 @@ class TestUserFactory extends Factory
         return [
             'name'                   => fake()->name(),
             'email'                  => fake()->unique()->safeEmail(),
-            'type'                   => 'admin',
             'password'               => static::$password ??= Hash::make('password'),
             'oauth_id'               => 'oauth_id',
             'oauth_token'            => 'oauth_token',
