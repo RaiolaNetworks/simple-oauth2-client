@@ -14,6 +14,7 @@ it('run the install command', function () {
         ->expectsQuestion('Main guard name:', 'web')
         ->expectsQuestion('Login route name:', 'login')
         ->expectsQuestion('Route name when callback is OK:', 'home')
+        ->expectsQuestion('Will you use the refresh token system in your app?', 'Yes')
         ->expectsQuestion('Oauth base url:', 'https://asgard.your.company')
         ->expectsQuestion('Oauth client ID:', 'CLIENTID')
         ->expectsQuestion('Oauth client secret key:', 'SECRETKEY')

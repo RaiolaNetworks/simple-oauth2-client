@@ -137,6 +137,10 @@ class OAuthController extends Controller
 
             // @phpstan-ignore-next-line
             if ($oauthData->oauth_token !== null && $oauthData->oauth_token_expires_at < now()->timestamp) {
+                if (config('oauth.offline_access') === false) {
+                    return $this->unauthorizeAndLogout($oauthData, $guardName);
+                }
+
                 try {
                     /** @var AccessToken $accessToken */
                     $accessToken = $this->provider->getAccessToken('refresh_token', [
@@ -146,19 +150,7 @@ class OAuthController extends Controller
                     $resourceOwner = $this->provider->getResourceOwner($accessToken);
                     $callback      = $resourceOwner->toArray();
                 } catch (IdentityProviderException|ClientException) {
-                    $oauthData->update([
-                        'oauth_token'            => null,
-                        'oauth_refresh_token'    => null,
-                        'oauth_token_expires_at' => null,
-                    ]);
-
-                    Auth::guard($guardName)->logout();
-
-                    /** @var string $loginRouteName */
-                    $loginRouteName = config('oauth.login_route_name');
-
-                    return Redirect::route($loginRouteName)
-                        ->with(['message' => 'Your session has expired. Please log in again.']);
+                    return $this->unauthorizeAndLogout($oauthData, $guardName);
                 }
 
                 $oauthData->update([
@@ -173,5 +165,22 @@ class OAuthController extends Controller
         }
 
         return null;
+    }
+
+    protected function unauthorizeAndLogout(OAuth $oauthData, string $guardName): RedirectResponse
+    {
+        $oauthData->update([
+            'oauth_token'            => null,
+            'oauth_refresh_token'    => null,
+            'oauth_token_expires_at' => null,
+        ]);
+
+        Auth::guard($guardName)->logout();
+
+        /** @var string $loginRouteName */
+        $loginRouteName = config('oauth.login_route_name');
+
+        return Redirect::route($loginRouteName)
+            ->with(['message' => 'Your session has expired. Please log in again.']);
     }
 }

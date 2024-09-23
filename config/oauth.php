@@ -53,4 +53,12 @@ return [
      */
     'user_handler'                    => Raiolanetworks\OAuth\Handlers\BaseOAuthUserHandler::class,
     'group_handler'                   => Raiolanetworks\OAuth\Handlers\BaseOAuthGroupHandler::class,
+
+    /**
+     * Allow refresh tokens in your app
+     *
+     * If the value is true, it will add the 'offline_access' scope in the OAuth
+     * provider configuration.
+     */
+    'offline_access'                  => true,
 ];
