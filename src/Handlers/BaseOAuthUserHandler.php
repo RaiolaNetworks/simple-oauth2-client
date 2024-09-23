@@ -7,6 +7,7 @@ namespace Raiolanetworks\OAuth\Handlers;
 use Illuminate\Database\Eloquent\Model;
 use League\OAuth2\Client\Token\AccessTokenInterface;
 use Raiolanetworks\OAuth\Contracts\OAuthUserHandlerInterface;
+use Raiolanetworks\OAuth\Models\OAuth;
 
 class BaseOAuthUserHandler implements OAuthUserHandlerInterface
 {
@@ -22,14 +23,10 @@ class BaseOAuthUserHandler implements OAuthUserHandlerInterface
 
         return (new $model())::updateOrCreate(
             [
-                'email'    => $userData['email'],
-                'oauth_id' => $userData['sub'],
+                'email' => $userData['email'],
             ],
             [
-                'name'                   => $userData['name'],
-                'oauth_token'            => $accessToken->getToken(),
-                'oauth_refresh_token'    => $accessToken->getRefreshToken(),
-                'oauth_token_expires_at' => $accessToken->getExpires(),
+                'name' => $userData['name'],
             ]
         );
     }

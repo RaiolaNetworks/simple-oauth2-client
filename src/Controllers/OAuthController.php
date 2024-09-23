@@ -9,16 +9,17 @@ use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Routing\Controller;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Facades\Session;
 use League\OAuth2\Client\Provider\Exception\IdentityProviderException;
+use League\OAuth2\Client\Token\AccessToken;
 use Livewire\Features\SupportRedirects\Redirector;
 use Raiolanetworks\OAuth\Contracts\OAuthGroupHandlerInterface;
 use Raiolanetworks\OAuth\Contracts\OAuthUserHandlerInterface;
 use Raiolanetworks\OAuth\Events\EventsOAuthTokenUpdated;
+use Raiolanetworks\OAuth\Models\OAuth;
 use Raiolanetworks\OAuth\Services\OAuthService;
 use Symfony\Component\HttpFoundation\RedirectResponse as HttpFoundationRedirectResponse;
 
@@ -83,7 +84,7 @@ class OAuthController extends Controller
 
             $this->provider->setPkceCode($session['oauth2-pkceCode']);
 
-            /** @var \League\OAuth2\Client\Token\AccessToken $accessToken */
+            /** @var AccessToken $accessToken */
             $accessToken = $this->provider->getAccessToken('authorization_code', [
                 'code' => $code,
             ]);
@@ -93,7 +94,19 @@ class OAuthController extends Controller
             $user = $this->userHandler->handleUser($callback, $accessToken);
             $this->groupHandler->handleGroups($callback['groups'], $user);
 
-            EventsOAuthTokenUpdated::dispatch($user, $callback['groups']);
+            $oauthData = OAuth::updateOrCreate(
+                [
+                    'user_id'  => $user->getKey(),
+                    'oauth_id' => $callback['sub'],
+                ],
+                [
+                    'oauth_token'            => $accessToken->getToken(),
+                    'oauth_refresh_token'    => $accessToken->getRefreshToken(),
+                    'oauth_token_expires_at' => $accessToken->getExpires(),
+                ]
+            );
+
+            EventsOAuthTokenUpdated::dispatch($user, $oauthData, $callback['groups']);
             Session::remove('oauth2-state');
             Session::remove('oauth2-pkceCode');
 
@@ -119,22 +132,21 @@ class OAuthController extends Controller
         $guardName = config('oauth.guard_name');
 
         if (Auth::guard($guardName)->check()) {
-            /** @var Authenticatable $user */
-            $user = Auth::guard($guardName)->user();
+            $user      = Auth::guard($guardName)->user();
+            $oauthData = OAuth::whereUserId($user?->getAuthIdentifier())->firstOrFail();
 
             // @phpstan-ignore-next-line
-            if ($user->oauth_token !== null && $user->oauth_token_expires_at->timestamp < Carbon::now()->timestamp) {
+            if ($oauthData->oauth_token !== null && $oauthData->oauth_token_expires_at < now()->timestamp) {
                 try {
-                    /** @var \League\OAuth2\Client\Token\AccessToken $accessToken */
+                    /** @var AccessToken $accessToken */
                     $accessToken = $this->provider->getAccessToken('refresh_token', [
-                        'refresh_token' => $user->oauth_refresh_token, // @phpstan-ignore-line
+                        'refresh_token' => $oauthData->oauth_refresh_token, // @phpstan-ignore-line
                     ]);
 
                     $resourceOwner = $this->provider->getResourceOwner($accessToken);
                     $callback      = $resourceOwner->toArray();
                 } catch (IdentityProviderException|ClientException) {
-                    /** @var Model $user */
-                    $user->update([
+                    $oauthData->update([
                         'oauth_token'            => null,
                         'oauth_refresh_token'    => null,
                         'oauth_token_expires_at' => null,
@@ -149,14 +161,14 @@ class OAuthController extends Controller
                         ->with(['message' => 'Your session has expired. Please log in again.']);
                 }
 
-                /** @var Model $user */
-                $user->update([
+                $oauthData->update([
                     'oauth_token'            => $accessToken->getToken(),
                     'oauth_refresh_token'    => $accessToken->getRefreshToken(),
                     'oauth_token_expires_at' => $accessToken->getExpires(),
                 ]);
 
-                EventsOAuthTokenUpdated::dispatch($user, $callback['groups']);
+                /** @var Model $user */
+                EventsOAuthTokenUpdated::dispatch($user, $oauthData, $callback['groups']);
             }
         }
 

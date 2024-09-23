@@ -14,11 +14,16 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table($this->getTableName(), function (Blueprint $table) {
+        Schema::create('oauth', function (Blueprint $table) {
+            $table->id();
+
+            $table->foreignId('user_id')->constrained($this->getTableName())->cascadeOnDelete();
             $table->string('oauth_id')->nullable();
             $table->longText('oauth_token')->nullable();
             $table->string('oauth_refresh_token')->nullable();
-            $table->timestamp('oauth_token_expires_at')->nullable();
+            $table->integer('oauth_token_expires_at')->nullable();
+
+            $table->timestamps();
         });
     }
 
@@ -27,12 +32,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropColumns($this->getTableName(), [
-            'oauth_id',
-            'oauth_token',
-            'oauth_refresh_token',
-            'oauth_token_expires_at',
-        ]);
+        Schema::dropIfExists('oauth');
     }
 
     protected function getTableName(): string

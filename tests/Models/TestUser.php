@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Raiolanetworks\OAuth\Tests\Models;
 
 use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Raiolanetworks\OAuth\Tests\Database\Factories\TestUserFactory;
@@ -15,19 +16,10 @@ class TestUser extends Model implements Authenticatable
 
     protected $fillable = [
         'email',
-        'oauth_id',
         'name',
-        'oauth_token',
-        'oauth_refresh_token',
-        'oauth_token_expires_at',
     ];
 
-    /**
-     * Indicar el path de la factoría personalizada.
-     *
-     * @return \Illuminate\Database\Eloquent\Factories\Factory
-     */
-    protected static function newFactory()
+    protected static function newFactory(): Factory
     {
         return TestUserFactory::new();
     }
