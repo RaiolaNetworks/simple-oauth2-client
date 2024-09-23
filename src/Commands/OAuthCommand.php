@@ -71,10 +71,17 @@ class OAuthCommand extends Command
             default: 'home',
         );
 
+        $offlineAccessScope = select(
+            label: 'Will you use the refresh token system in your app?',
+            options: ['Yes', 'No'],
+            default: 'Yes',
+        );
+
         config()->set('oauth.user_model_name', $modelName);
         config()->set('oauth.guard_name', $guardName);
         config()->set('oauth.login_route_name', $loginRoute);
         config()->set('oauth.redirect_route_name_callback_ok', $redirectCallbackOkRoute);
+        config()->set('oauth.offline_access', $offlineAccessScope === 'Yes' ? true : false);
     }
 
     protected function setEnvironmentVariables(): void
