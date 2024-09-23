@@ -17,6 +17,7 @@ use function Pest\Laravel\instance;
 use Raiolanetworks\OAuth\Contracts\OAuthGroupHandlerInterface;
 use Raiolanetworks\OAuth\Contracts\OAuthUserHandlerInterface;
 use Raiolanetworks\OAuth\Controllers\OAuthController;
+use Raiolanetworks\OAuth\Models\OAuth;
 use Raiolanetworks\OAuth\Services\OAuthService;
 use Raiolanetworks\OAuth\Tests\Models\TestUser;
 
@@ -182,17 +183,21 @@ it('renews the OAuth token if the user is authenticated and the token is expired
     $mockOAuthUserHandlerInterface  = Mockery::mock(OAuthUserHandlerInterface::class);
     $mockOAuthGroupHandlerInterface = Mockery::mock(OAuthGroupHandlerInterface::class);
 
-    $mockUser = TestUser::factory(state: [
-        'oauth_token_expires_at' => Carbon::now()->subHour(),
+    $newOAuthToken   = 'new_oauth_token';
+    $newRefreshToken = 'new_refresh_token';
+    $newExpiredDate  = Carbon::now()->addHour()->timestamp;
+
+    $mockUser  = TestUser::factory()->create();
+    $oauthData = OAuth::factory(state: [
+        'user_id'                => $mockUser->id,
+        'oauth_token'            => $newOAuthToken,
+        'oauth_refresh_token'    => $newRefreshToken,
+        'oauth_token_expires_at' => $newExpiredDate,
     ])->create();
 
     Auth::shouldReceive('guard')
         ->with(config('oauth.guard_name'))
         ->andReturn(Mockery::mock(Guard::class, ['check' => true, 'user' => $mockUser]));
-
-    $newOAuthToken   = 'new_oauth_token';
-    $newRefreshToken = 'new_refresh_token';
-    $newExpiredDate  = Carbon::now()->addHour()->timestamp;
 
     $mockAccessToken = Mockery::mock(AccessToken::class);
     $mockAccessToken->shouldReceive('getToken')->andReturn($newOAuthToken);
@@ -200,7 +205,7 @@ it('renews the OAuth token if the user is authenticated and the token is expired
     $mockAccessToken->shouldReceive('getExpires')->andReturn($newExpiredDate);
 
     $mockOAuthService->shouldReceive('getAccessToken')
-        ->with('refresh_token', ['refresh_token' => 'oauth_refresh_token'])
+        ->with('refresh_token', ['refresh_token' => $newRefreshToken])
         ->andReturn($mockAccessToken);
 
     $mockOAuthService->shouldReceive('getResourceOwner')
@@ -209,7 +214,7 @@ it('renews the OAuth token if the user is authenticated and the token is expired
         ]]));
 
     $mockOAuthUserHandlerInterface->shouldReceive('handleUser')
-        ->andReturn(TestUser::factory()->create());
+        ->andReturn($mockUser);
     $mockOAuthGroupHandlerInterface->shouldReceive('handleGroups')
         ->andReturn();
 
@@ -219,9 +224,9 @@ it('renews the OAuth token if the user is authenticated and the token is expired
 
     $response = $this->app->make(OAuthController::class)->renew();
 
-    expect($mockUser->oauth_token)->toBe($newOAuthToken);
-    expect($mockUser->oauth_refresh_token)->toBe($newRefreshToken);
-    expect($mockUser->oauth_token_expires_at)->toBe($newExpiredDate);
+    expect($oauthData->oauth_token)->toBe($newOAuthToken);
+    expect($oauthData->oauth_refresh_token)->toBe($newRefreshToken);
+    expect($oauthData->oauth_token_expires_at)->toBe($newExpiredDate);
 
     expect($response)->toBeNull();
 });
@@ -232,8 +237,10 @@ it('logs out the user if there is an error during token renewal', function () {
     $mockOAuthUserHandlerInterface  = Mockery::mock(OAuthUserHandlerInterface::class);
     $mockOAuthGroupHandlerInterface = Mockery::mock(OAuthGroupHandlerInterface::class);
 
-    $mockUser = TestUser::factory(state: [
-        'oauth_token_expires_at' => Carbon::now()->subHour(),
+    $mockUser = TestUser::factory()->create();
+    OAuth::factory(state: [
+        'user_id'                => $mockUser->id,
+        'oauth_token_expires_at' => Carbon::now()->subHour()->timestamp,
     ])->create();
 
     $mockGuard = Mockery::mock(Guard::class);
