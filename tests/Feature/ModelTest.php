@@ -6,9 +6,9 @@ use Raiolanetworks\OAuth\Models\OAuth;
 use Raiolanetworks\OAuth\Tests\Models\TestUser;
 
 it('check user relationships in the OAuth model', function () {
-    $user = TestUser::factory()->create();
+    $user       = TestUser::factory()->create();
     $oauthModel = OAuth::factory(state: [
-        'user_id' => $user->id
+        'user_id' => $user->id,
     ])->create();
 
     expect($oauthModel->user)->toBeInstanceOf($user::class);

@@ -302,12 +302,11 @@ it('logs out the user if offline_access is false during token renewal', function
     $mockOAuthUserHandlerInterface  = Mockery::mock(OAuthUserHandlerInterface::class);
     $mockOAuthGroupHandlerInterface = Mockery::mock(OAuthGroupHandlerInterface::class);
 
-
     $mockUser = TestUser::factory()->create();
     OAuth::factory(state: [
         'user_id'                => $mockUser->id,
         'oauth_token_expires_at' => Carbon::now()->subHour()->timestamp,
-        ])->create();
+    ])->create();
 
     Config::set('oauth.offline_access', false);
 
