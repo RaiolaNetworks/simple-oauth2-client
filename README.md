@@ -172,7 +172,6 @@ For token renewal, simply set the 'offline_access' variable in [the configuratio
 
 A [middleware](src/Middleware/OAuthTokenRenewal.php) is available that calls the `renew()` function of the `OAuthController`. This function checks whether the authenticated user has an OAuth token and if the expiration time has not passed. If the token has expired, it will determine if a refresh token is being handled. It will either generate a new token or reject and unauthenticate the user's session accordingly.
 
-
 ## Testing
 
 ```bash

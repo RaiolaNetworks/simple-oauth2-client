@@ -39,6 +39,6 @@ class OAuth extends Model
         /** @var Model $model */
         $model = config('oauth.user_model_name');
 
-        return $this->belongsTo($model::class);
+        return $this->belongsTo((new $model)::class);
     }
 }

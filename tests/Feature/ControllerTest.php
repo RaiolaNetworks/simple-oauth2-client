@@ -36,6 +36,8 @@ it('redirect authenticated users to the homepage', function () {
 
     expect($response->getStatusCode())->toBe(302);
     expect($response->headers->get('Location'))->toBe(Redirect::to('/')->getTargetUrl());
+
+    Mockery::close();
 });
 
 /** @var TestCase $this */
@@ -70,6 +72,8 @@ it('redirects unauthenticated users to the OAuth provider', function () {
 
     expect($response->getStatusCode())->toBe(302);
     expect($response->headers->get('Location'))->toBe('https://example.com/oauth/authorize');
+
+    Mockery::close();
 });
 
 it('redirect where the user intends to go if authenticated in the callback', function () {
@@ -87,6 +91,8 @@ it('redirect where the user intends to go if authenticated in the callback', fun
 
     expect($response->getStatusCode())->toBe(302);
     expect($response->headers->get('Location'))->toBe(Redirect::intended()->getTargetUrl());
+
+    Mockery::close();
 });
 
 it('handles invalid or missing code in callback', function () {
@@ -102,6 +108,8 @@ it('handles invalid or missing code in callback', function () {
     expect($response->getStatusCode())->toBe(302);
     expect($response->headers->get('Location'))->toBe(route(config('oauth.login_route_name')));
     expect(session('message'))->toBe('Authentication failed. Please try again.');
+
+    Mockery::close();
 });
 
 it('handles invalid state in callback', function () {
@@ -115,6 +123,8 @@ it('handles invalid state in callback', function () {
     expect($response->getStatusCode())->toBe(302);
     expect($response->headers->get('Location'))->toBe(route(config('oauth.login_route_name')));
     expect(session('message'))->toBe('Authentication failed. Please try again.');
+
+    Mockery::close();
 });
 
 it('logs in the user after a successful OAuth callback', function () {
@@ -175,6 +185,8 @@ it('logs in the user after a successful OAuth callback', function () {
 
     expect($response->getStatusCode())->toBe(302);
     expect($response->headers->get('Location'))->toBe(Redirect::route(config('oauth.redirect_route_name_callback_ok'))->getTargetUrl());
+
+    Mockery::close();
 });
 
 /** @var TestCase $this */
@@ -183,9 +195,11 @@ it('renews the OAuth token if the user is authenticated and the token is expired
     $mockOAuthUserHandlerInterface  = Mockery::mock(OAuthUserHandlerInterface::class);
     $mockOAuthGroupHandlerInterface = Mockery::mock(OAuthGroupHandlerInterface::class);
 
+    Config::set('oauth.offline_access', true);
+
     $newOAuthToken   = 'new_oauth_token';
     $newRefreshToken = 'new_refresh_token';
-    $newExpiredDate  = Carbon::now()->addHour()->timestamp;
+    $newExpiredDate  = Carbon::now()->subHour()->timestamp;
 
     $mockUser  = TestUser::factory()->create();
     $oauthData = OAuth::factory(state: [
@@ -229,6 +243,8 @@ it('renews the OAuth token if the user is authenticated and the token is expired
     expect($oauthData->oauth_token_expires_at)->toBe($newExpiredDate);
 
     expect($response)->toBeNull();
+
+    Mockery::close();
 });
 
 /** @var TestCase $this */
@@ -237,9 +253,12 @@ it('logs out the user if there is an error during token renewal', function () {
     $mockOAuthUserHandlerInterface  = Mockery::mock(OAuthUserHandlerInterface::class);
     $mockOAuthGroupHandlerInterface = Mockery::mock(OAuthGroupHandlerInterface::class);
 
+    Config::set('oauth.offline_access', true);
+
     $mockUser = TestUser::factory()->create();
     OAuth::factory(state: [
         'user_id'                => $mockUser->id,
+        'oauth_refresh_token'    => null,
         'oauth_token_expires_at' => Carbon::now()->subHour()->timestamp,
     ])->create();
 
@@ -253,17 +272,12 @@ it('logs out the user if there is an error during token renewal', function () {
         ->andReturn($mockGuard);
 
     $mockOAuthService->shouldReceive('getAccessToken')
-        ->with('refresh_token', ['refresh_token' => 'oauth_refresh_token'])
+        ->with('refresh_token', ['refresh_token' => null])
         ->andThrow(IdentityProviderException::class);
 
     Auth::shouldReceive('guard')
         ->with(config('oauth.guard_name'))
         ->andReturn(Mockery::mock(Guard::class, ['logout' => null]));
-
-    $mockOAuthUserHandlerInterface->shouldReceive('handleUser')
-        ->andReturn(TestUser::factory()->create());
-    $mockOAuthGroupHandlerInterface->shouldReceive('handleGroups')
-        ->andReturn();
 
     instance(OAuthService::class, $mockOAuthService);
     instance(OAuthUserHandlerInterface::class, $mockOAuthUserHandlerInterface);
@@ -278,4 +292,47 @@ it('logs out the user if there is an error during token renewal', function () {
     expect($response->getStatusCode())->toBe(302);
     expect($response->headers->get('Location'))->toBe(route(config('oauth.login_route_name')));
     expect(session('message'))->toBe('Your session has expired. Please log in again.');
+
+    Mockery::close();
+});
+
+/** @var TestCase $this */
+it('logs out the user if offline_access is false during token renewal', function () {
+    $mockOAuthService               = Mockery::mock(OAuthService::class);
+    $mockOAuthUserHandlerInterface  = Mockery::mock(OAuthUserHandlerInterface::class);
+    $mockOAuthGroupHandlerInterface = Mockery::mock(OAuthGroupHandlerInterface::class);
+
+
+    $mockUser = TestUser::factory()->create();
+    OAuth::factory(state: [
+        'user_id'                => $mockUser->id,
+        'oauth_token_expires_at' => Carbon::now()->subHour()->timestamp,
+        ])->create();
+
+    Config::set('oauth.offline_access', false);
+
+    $mockGuard = Mockery::mock(Guard::class);
+    $mockGuard->shouldReceive('check')->andReturn(true);
+    $mockGuard->shouldReceive('user')->andReturn($mockUser);
+    $mockGuard->shouldReceive('logout')->once();
+
+    Auth::shouldReceive('guard')
+        ->with(config('oauth.guard_name'))
+        ->andReturn($mockGuard);
+
+    instance(OAuthService::class, $mockOAuthService);
+    instance(OAuthUserHandlerInterface::class, $mockOAuthUserHandlerInterface);
+    instance(OAuthGroupHandlerInterface::class, $mockOAuthGroupHandlerInterface);
+
+    $response = $this->app->make(OAuthController::class)->renew();
+
+    expect($mockUser->oauth_token)->toBeNull();
+    expect($mockUser->oauth_refresh_token)->toBeNull();
+    expect($mockUser->oauth_token_expires_at)->toBeNull();
+
+    expect($response->getStatusCode())->toBe(302);
+    expect($response->headers->get('Location'))->toBe(route(config('oauth.login_route_name')));
+    expect(session('message'))->toBe('Your session has expired. Please log in again.');
+
+    Mockery::close();
 });
