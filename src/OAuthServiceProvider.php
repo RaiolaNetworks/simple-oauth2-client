@@ -18,7 +18,7 @@ class OAuthServiceProvider extends PackageServiceProvider
             ->hasConfigFile()
             ->hasRoute('web')
             ->hasTranslations()
-            ->hasMigration('modify_user_table')
+            ->hasMigration('create_oauth_table')
             ->hasCommand(OAuthCommand::class);
 
         // Register the main class to use with the facade

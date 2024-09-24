@@ -25,7 +25,7 @@ php artisan oauth:install
 
 When this command is executed, the user will be guided through a series of steps to properly configure the necessary variables in both the configuration file and the environment file.
 
-Steps in the installation process:
+#### Steps in the installation process:
 
 ### Setting variables in the configuration file
 - **Authenticatable model name**: Here you need to enter the name of the user management model used in the project, which must implement the `Authenticatable` interface.
@@ -33,6 +33,10 @@ Steps in the installation process:
 - **Main guard name**: You should specify the name of the guard that handles the login process in the project.
 
 - **Login route**: You need to provide the route defined in the project where the login process takes place.
+
+- **Route name when callback is OK**: Here you indicate the name of your project path where the redirection will be made after a correct response from the provider.
+
+- **Will you use the refresh token system in your app?**: Checking 'Yes' will allow the 'offline_access' scope to be added to the provider configuration. Which will allow the use of refresh token (as long as it is enabled in your OAuth provider).
 
 ### Creation of variables in the .env file
 - **OAuth base URL**: Enter the base URL of the OAuth provider, which will be used for authorization and authentication requests.
@@ -44,6 +48,16 @@ Steps in the installation process:
 - **OAuth admin group name**: Specify the name of the user group with administrative privileges that will be managed within the OAuth system.
 
 - **OAuth mode**: Select the mode of operation of the OAuth system, which will allow 3 modes: “OAUTH”, “PASSWORD” or “BOTH”.
+
+## IMPORTANT
+
+~~~
+If the process is not completed correctly or is aborted, the implementation and use of the package will result in errors, such as:
+
+- Missing the new database table required to store OAuth user data.
+- Incorrectly configured configuration file.
+- Environment variables that are improperly defined or missing.
+~~~
 
 Once all steps are completed, the migrations will be automatically executed and the configuration file will be published.
 
@@ -65,6 +79,7 @@ php artisan vendor:publish --tag="oauth-translations"
 ```
 
 ## Implementing the Package in the Project
+
 
 Before starting to develop the workflow, it is recommended to understand how the package works when creating or modifying users and groups.
 
@@ -96,7 +111,7 @@ $authController = new OAuthController;
 $authController->request();
 ```
 
-#### 1. Create a Controller to Handle OAuth Authentication
+### 1. Create a Controller to Handle OAuth Authentication
 
 First, you'll need to create a controller that handles the OAuth authentication logic. You can use the `OAuthController` provided by the package or create your own controller. The main goal is to call the `request()` method from the package to start the OAuth authentication process.
 
@@ -119,7 +134,7 @@ class AuthController extends Controller
 }
 ```
 
-#### 2. Set Up a Login Route
+### 2. Set Up a Login Route
 
 In your routes file (`routes/web.php`), define a route that points to the controller you just created. This route will trigger the OAuth authentication process when the user interacts with the login button or link.
 
@@ -129,7 +144,7 @@ use App\Http\Controllers\AuthController;
 Route::get('/login/oauth', [AuthController::class, 'loginWithOAuth'])->name('login.oauth');
 ```
 
-#### 3. Create a Login Button or Link in the View
+### 3. Create a Login Button or Link in the View
 
 In your application's view (e.g., `resources/views/auth/login.blade.php`), add a button or link that points to the route you defined in the previous step. When the user clicks the button, the OAuth authentication process will begin.
 
@@ -139,13 +154,24 @@ In your application's view (e.g., `resources/views/auth/login.blade.php`), add a
 </a>
 ```
 
-#### 4. Authentication Process
+### 4. Authentication Process
 
 When the user clicks the button or link, a request will be sent to the `login()` function of the `AuthController`. From there, the controller will call the `request()` method of the package's `OAuthController`, which handles the OAuth authentication flow by redirecting the user to the OAuth provider for authorization.
 
 Once the user completes the authorization process, the OAuth provider will redirect back to your application, where you can handle the response and authenticate the user in your system.
 
 This will complete the integration of the OAuth package into your project, allowing you to set up a login flow that triggers the OAuth authentication process with a button or link.
+
+### Other features
+
+This section talks about certain functions of the package, which are good to know.
+
+#### Renew tokens
+
+For token renewal, simply set the 'offline_access' variable in [the configuration file](config/oauth.php) to `true`; the package will handle the rest.
+
+A [middleware](src/Middleware/OAuthTokenRenewal.php) is available that calls the `renew()` function of the `OAuthController`. This function checks whether the authenticated user has an OAuth token and if the expiration time has not passed. If the token has expired, it will determine if a refresh token is being handled. It will either generate a new token or reject and unauthenticate the user's session accordingly.
+
 
 ## Testing
 
