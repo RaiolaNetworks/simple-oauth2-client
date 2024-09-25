@@ -9,6 +9,10 @@ This OAuth for Laravel package provides a simple and reusable integration for im
 
 The package is designed to work flexibly with any user model that implements the Authenticatable interface, ensuring that it can be easily adapted to various projects without direct dependencies on a specific user model.
 
+## Get to know us
+
+[<img src="https://cdn-assets.raiolanetworks.com/dist/images/logos/logo-blue.svg" width="419px" />](https://raiolanetworks.com)
+
 ## Installation
 
 You can install the package via composer:
