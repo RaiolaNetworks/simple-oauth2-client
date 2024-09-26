@@ -6,7 +6,7 @@
         "laravel",
         "oauth"
     ],
-    "homepage": "https://github.com/raiolanetworks/oauth",
+    "homepage": "https://github.com/RaiolaNetworks/simple-oauth2-client",
     "license": "MIT",
     "authors": [
         {
@@ -24,6 +24,7 @@
     "require": {
         "php": "^8.2",
         "illuminate/contracts": "^10.0||^11.0",
+        "laravel/framework": "11.*",
         "laravel/prompts": "^0.1.25",
         "league/oauth2-client": "^2.7",
         "livewire/livewire": "^3.5",
@@ -32,11 +33,13 @@
     "require-dev": {
         "larastan/larastan": "^2.0",
         "laravel/pint": "^1.14",
+        "mockery/mockery": "^1.6",
         "nunomaduro/collision": "^8.1.1||^7.10.0",
         "orchestra/testbench": "^9.4",
         "pestphp/pest": "^2.34",
         "pestphp/pest-plugin-arch": "^2.7",
-        "pestphp/pest-plugin-laravel": "^2.3"
+        "pestphp/pest-plugin-laravel": "^2.3",
+        "pestphp/pest-plugin-type-coverage": "^2.8"
     },
     "autoload": {
         "psr-4": {
@@ -47,6 +50,7 @@
     "autoload-dev": {
         "psr-4": {
             "Raiolanetworks\\OAuth\\Tests\\": "tests/",
+            "Raiolanetworks\\OAuth\\Tests\\Database\\Factories\\": "tests/database/factories/",
             "Workbench\\App\\": "workbench/app/",
             "Workbench\\Database\\Factories\\": "workbench/database/factories/",
             "Workbench\\Database\\Seeders\\": "workbench/database/seeders/"

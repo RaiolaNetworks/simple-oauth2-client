@@ -14,6 +14,12 @@ class OAuthService extends GenericProvider
      */
     public function __construct(array $options = [], array $collaborators = [])
     {
+        $scopes = 'openid profile email';
+
+        if (config('oauth.offline_access') === true) {
+            $scopes .= ' offline_access';
+        }
+
         $options = array_merge($options, [
             'clientId'                => config('oauth.client_id'),
             'clientSecret'            => config('oauth.client_secret'),
@@ -22,7 +28,7 @@ class OAuthService extends GenericProvider
             'urlAccessToken'          => config('oauth.base_url') . '/application/o/token/',
             'urlResourceOwnerDetails' => config('oauth.base_url') . '/application/o/userinfo/',
             'pkceMethod'              => GenericProvider::PKCE_METHOD_S256,
-            'scopes'                  => 'openid profile email offline_access',
+            'scopes'                  => $scopes,
             'responseResourceOwnerId' => 'sub',
             'prompt'                  => 'consent',
         ]);

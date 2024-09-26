@@ -1,4 +1,4 @@
-name: run-tests
+name: Pest
 
 on:
   push:
@@ -9,6 +9,8 @@ on:
       - 'composer.json'
       - 'composer.lock'
 
+  workflow_dispatch:
+
 jobs:
   test:
     runs-on: ${{ matrix.os }}
@@ -16,7 +18,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [ubuntu-latest]
         php: [8.3, 8.2]
         laravel: [11.*, 10.*]
         stability: [prefer-lowest, prefer-stable]

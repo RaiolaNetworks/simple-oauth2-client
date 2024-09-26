@@ -39,5 +39,4 @@ body:
       label: "Feature priority"
       options:
         - label: "Critical"
-        - label: "Important"
-        - label: "Nice to have"
+
