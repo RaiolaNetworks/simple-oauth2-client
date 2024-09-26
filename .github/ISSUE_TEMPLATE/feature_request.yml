@@ -27,20 +27,6 @@ body:
       placeholder: "Describe the new feature here..."
 
   - type: textarea
-    id: benefit_explanation
-    attributes:
-      label: "How would this feature improve the project?"
-      description: "Explain how this feature would solve the problem or improve the project."
-      placeholder: "Describe how this feature will benefit the project..."
-
-  - type: textarea
-    id: alternative_solutions
-    attributes:
-      label: "Alternative solutions"
-      description: "If you have considered alternative solutions, describe them here."
-      placeholder: "Describe alternative solutions here..."
-
-  - type: textarea
     id: additional_context
     attributes:
       label: "Additional context"
