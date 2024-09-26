@@ -1,9 +1,9 @@
 # Easily add OAuth2 access to your projects
 
-[![Latest Version on Packagist](https://img.shields.io/packagist/v/raiolanetworks/oauth.svg?style=flat-square)](https://packagist.org/packages/raiolanetworks/oauth)
+[![Latest Version on Packagist](https://img.shields.io/packagist/v/raiolanetworks/oauth.svg?style=flat-square)](https://packagist.org/packages/raiolanetworks/simple-oauth2-client)
 [![GitHub Tests Action Status](https://img.shields.io/github/actions/workflow/status/raiolanetworks/oauth/run-tests.yml?branch=main&label=tests&style=flat-square)](https://github.com/raiolanetworks/oauth/actions?query=workflow%3Arun-tests+branch%3Amain)
 [![GitHub Code Style Action Status](https://img.shields.io/github/actions/workflow/status/raiolanetworks/oauth/fix-php-code-style-issues.yml?branch=main&label=code%20style&style=flat-square)](https://github.com/raiolanetworks/oauth/actions?query=workflow%3A"Fix+PHP+code+style+issues"+branch%3Amain)
-[![Total Downloads](https://img.shields.io/packagist/dt/raiolanetworks/oauth.svg?style=flat-square)](https://packagist.org/packages/raiolanetworks/oauth)
+[![Total Downloads](https://img.shields.io/packagist/dt/raiolanetworks/oauth.svg?style=flat-square)](https://packagist.org/packages/raiolanetworks/simple-oauth2-client)
 
 This OAuth for Laravel package provides a simple and reusable integration for implementing OAuth authentication in Laravel projects. The main goal is to allow developers to extend and customize their application's authentication system without needing to modify their existing user models.
 
@@ -18,7 +18,7 @@ The package is designed to work flexibly with any user model that implements the
 You can install the package via composer:
 
 ```bash
-composer require raiolanetworks/oauth
+composer require raiolanetworks/simple-oauth2-client
 ```
 
 The next step is to configure the package using this command:
