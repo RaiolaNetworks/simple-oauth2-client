@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Raiolanetworks\OAuth\Commands;
 
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Str;
 
 use function Laravel\Prompts\info;
