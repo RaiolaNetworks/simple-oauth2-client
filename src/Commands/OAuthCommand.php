@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Raiolanetworks\OAuth\Commands;
 
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Str;
 
 use function Laravel\Prompts\info;
@@ -19,17 +20,18 @@ class OAuthCommand extends Command
 
     public function handle(): int
     {
-        $this->setConfigVariables();
-        info('3 variables have been overwritten in the configuration file “oauth.php”.');
-
-        $this->setEnvironmentVariables();
-        info('6 new variables have been created in the environment file “.env”.');
-
         $this->call('vendor:publish', [
             '--tag' => 'oauth-config',
             '--force',
         ]);
         info('The configuration file has been published.');
+
+        $this->setConfigVariables();
+        $this->call('config:clear');
+        info('Some variables have been overwritten in the configuration file “oauth.php”.');
+
+        $this->setEnvironmentVariables();
+        info('Some new variables have been created in the environment file “.env”.');
 
         info('Loading migrations...');
         app()->make('oauth')->loadMigrations();
