@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Raiolanetworks\OAuth\Commands;
 
+use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Support\Str;
 
@@ -26,7 +27,6 @@ class OAuthCommand extends Command
         info('The configuration file has been published.');
 
         $this->setConfigVariables();
-        $this->call('config:clear');
         info('Some variables have been overwritten in the configuration file “oauth.php”.');
 
         $this->setEnvironmentVariables();
@@ -50,39 +50,38 @@ class OAuthCommand extends Command
         $modelName = text(
             label: 'Model name Authenticatable:',
             placeholder: 'E.g. app/Models/User',
-            default: 'app/Models/User',
+            default: 'App\Models\User',
             validate: fn (string $value) => $this->modelNameValidation($value),
         );
+        $this->setConfigVariable('user_model_name', $modelName);
 
         $guardName = text(
             label: 'Main guard name:',
             placeholder: 'E.g. web',
             default: 'web',
         );
+        $this->setConfigVariable('guard_name', $guardName);
 
         $loginRoute = text(
             label: 'Login route name:',
             placeholder: 'E.g. login',
             default: 'login',
         );
+        $this->setConfigVariable('login_route_name', $loginRoute);
 
         $redirectCallbackOkRoute = text(
             label: 'Route name when callback is OK:',
             placeholder: 'E.g. home',
             default: 'home',
         );
+        $this->setConfigVariable('redirect_route_name_callback_ok', $redirectCallbackOkRoute);
 
         $offlineAccessScope = select(
             label: 'Will you use the refresh token system in your app?',
             options: ['Yes', 'No'],
             default: 'Yes',
         );
-
-        config()->set('oauth.user_model_name', $modelName);
-        config()->set('oauth.guard_name', $guardName);
-        config()->set('oauth.login_route_name', $loginRoute);
-        config()->set('oauth.redirect_route_name_callback_ok', $redirectCallbackOkRoute);
-        config()->set('oauth.offline_access', $offlineAccessScope === 'Yes' ? true : false);
+        $this->setConfigVariable('offline_access', $offlineAccessScope === 'Yes' ? true : false);
     }
 
     protected function setEnvironmentVariables(): void
@@ -145,7 +144,7 @@ class OAuthCommand extends Command
 
     protected function modelNameValidation(string $value): ?string
     {
-        $path                 = $value . '.php';
+        $path                 = Str::replace('\\', '/', $value) . '.php';
         $class                = '\\' . Str::ucfirst(Str::replace('/', '\\', $value));
         $authenticatableClass = 'Illuminate\Contracts\Auth\Authenticatable';
 
@@ -159,5 +158,36 @@ class OAuthCommand extends Command
             ! in_array($authenticatableClass, array_values(class_implements($class))) => 'This model not implement the Authenticatable interface.',
             default                                                                   => null,
         };
+    }
+
+    protected function setConfigVariable(string $key, mixed $value): void
+    {
+        $configPath = 'config/oauth.php';
+
+        if (! file_exists($configPath)) {
+            throw new Exception('Unable to find the configuration file...');
+        }
+
+        /** @var array<string> $lines */
+        $lines = file($configPath);
+
+        foreach ($lines as &$line) {
+            $trimLine = trim($line);
+
+            if (empty($trimLine) || strpos($trimLine, '//') === 0 || strpos($trimLine, '#') === 0) {
+                continue;
+            }
+
+            $pattern = "/(['\"])" . preg_quote($key, '/') . "\\1\s*=>\s*(.+?),/";
+
+            if (preg_match($pattern, $trimLine)) {
+                $valorFormateado = var_export($value, true);
+                $line            = preg_replace($pattern, "'$key' => $valorFormateado,", $line);
+
+                break;
+            }
+        }
+
+        file_put_contents($configPath, implode('', $lines));
     }
 }

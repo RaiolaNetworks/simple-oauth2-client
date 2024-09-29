@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\File;
+use Raiolanetworks\OAuth\Commands\OAuthCommand;
 use Raiolanetworks\OAuth\Tests\Models\TestUser;
 
 it('run the install command', function () {
@@ -23,4 +25,28 @@ it('run the install command', function () {
         ->assertExitCode(Command::SUCCESS);
 
     unlink($tempFilePath);
+});
+
+it('verify that if the configuration file does not exist it returns an exception', function () {
+    $configPath = 'config/oauth.php';
+    $backupPath = 'config/oauth_backup.php';
+
+    if (file_exists($configPath)) {
+        rename($configPath, $backupPath);
+    }
+
+    try {
+        $command = new OAuthCommand();
+
+        $reflection = new ReflectionClass($command);
+        $method     = $reflection->getMethod('setConfigVariable');
+        $method->setAccessible(true);
+
+        expect(fn () => $method->invokeArgs($command, ['some_key', 'some_value']))
+            ->toThrow(Exception::class, 'Unable to find the configuration file...');
+    } finally {
+        if (File::exists($backupPath)) {
+            File::move($backupPath, $configPath);
+        }
+    }
 });
