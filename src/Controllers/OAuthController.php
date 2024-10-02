@@ -133,10 +133,10 @@ class OAuthController extends Controller
 
         if (Auth::guard($guardName)->check()) {
             $user      = Auth::guard($guardName)->user();
-            $oauthData = OAuth::whereUserId($user?->getAuthIdentifier())->firstOrFail();
+            $oauthData = OAuth::whereUserId($user?->getAuthIdentifier())->first();
 
             // @phpstan-ignore-next-line
-            if ($oauthData->oauth_token !== null && $oauthData->oauth_token_expires_at < now()->timestamp) {
+            if ($oauthData !== null && $oauthData->oauth_token !== null && $oauthData->oauth_token_expires_at < now()->timestamp) {
                 if (config('oauth.offline_access') === false) {
                     return $this->unauthorizeAndLogout($oauthData, $guardName);
                 }
