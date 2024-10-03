@@ -2,6 +2,12 @@
 
 All notable changes to `oauth` will be documented in this file.
 
+## v1.0.4 - 2024-10-03
+
+### All login modes have been moved to an Enum file.
+
+An Enum file has been created to store all login modes to facilitate access to these modes in the application implementing the package and thus avoid the hardcoding or definitions of the modes.
+
 ## v1.0.2 - 2024-10-02
 
 ### Checking if OAuth user data exists.
