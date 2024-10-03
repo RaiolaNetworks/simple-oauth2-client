@@ -12,6 +12,8 @@ use function Laravel\Prompts\info;
 use function Laravel\Prompts\select;
 use function Laravel\Prompts\text;
 
+use Raiolanetworks\OAuth\Enums\LoginModesEnum;
+
 class OAuthCommand extends Command
 {
     public $signature = 'oauth:install';
@@ -110,7 +112,7 @@ class OAuthCommand extends Command
 
         $oauthMode = select(
             label: 'OAuth mode. Options: login only with username and password, only with OAuth or both:',
-            options: ['OAUTH', 'PASSWORD', 'BOTH'],
+            options: array_column(LoginModesEnum::cases(), 'value'),
             required: true,
         );
 
