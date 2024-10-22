@@ -4,7 +4,8 @@
     "keywords": [
         "RaiolaNetworks",
         "laravel",
-        "oauth"
+        "oauth",
+        "oauth2"
     ],
     "homepage": "https://github.com/RaiolaNetworks/simple-oauth2-client",
     "license": "MIT",
@@ -23,8 +24,8 @@
     ],
     "require": {
         "php": "^8.2",
-        "illuminate/contracts": "^10.0||^11.0",
-        "laravel/framework": "11.*",
+        "illuminate/contracts": "^10.0|^11.0",
+        "laravel/framework": "^10.0|^11.0",
         "laravel/prompts": "^0.1.25",
         "league/oauth2-client": "^2.7",
         "livewire/livewire": "^3.5",
