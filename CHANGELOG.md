@@ -2,6 +2,14 @@
 
 All notable changes to `oauth` will be documented in this file.
 
+## v1.0.6 - 2024-10-22
+
+### Temporary modifications to the configuration file variables.
+
+A line has been added to solve a synchronization problem when recovering a value from the configuration file when executing migrations.
+
+The variables in the configuration file are temporarily configured before finishing the process since the 'oauth' file is not required until the installation command process finishes.
+
 ## v1.0.5 - 2024-10-22
 
 ### Modified composer.json file.
