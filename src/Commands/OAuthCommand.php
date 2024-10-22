@@ -170,6 +170,8 @@ class OAuthCommand extends Command
             throw new Exception('Unable to find the configuration file...');
         }
 
+        config()->set('oauth.' . $key, $value);
+
         /** @var array<string> $lines */
         $lines = file($configPath);
 
