@@ -2,6 +2,12 @@
 
 All notable changes to `oauth` will be documented in this file.
 
+## v1.0.5 - 2024-10-22
+
+### Modified composer.json file.
+
+Added v10.* in the "laravel/framework" requirement to support older versions.
+
 ## v1.0.4 - 2024-10-03
 
 ### All login modes have been moved to an Enum file.
