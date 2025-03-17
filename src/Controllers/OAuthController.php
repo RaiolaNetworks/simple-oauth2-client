@@ -9,13 +9,13 @@ use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Routing\Controller;
+use Illuminate\Routing\Redirector;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Facades\Session;
 use League\OAuth2\Client\Provider\Exception\IdentityProviderException;
 use League\OAuth2\Client\Token\AccessToken;
-use Livewire\Features\SupportRedirects\Redirector;
 use Raiolanetworks\OAuth\Contracts\OAuthGroupHandlerInterface;
 use Raiolanetworks\OAuth\Contracts\OAuthUserHandlerInterface;
 use Raiolanetworks\OAuth\Events\EventsOAuthTokenUpdated;
@@ -126,7 +126,7 @@ class OAuthController extends Controller
         }
     }
 
-    public function renew(): null|\Illuminate\Routing\Redirector|RedirectResponse
+    public function renew(): null|Redirector|RedirectResponse
     {
         /** @var string $guardName */
         $guardName = config('oauth.guard_name');
