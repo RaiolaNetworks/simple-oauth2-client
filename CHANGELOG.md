@@ -2,6 +2,10 @@
 
 All notable changes to `oauth` will be documented in this file.
 
+## v1.0.8 - 2025-03-26
+
+### Updated composer to allow deployments with Laravel 12.
+
 ## v1.0.7 - 2025-03-17
 
 ### Unnecessary dependencies were removed.
