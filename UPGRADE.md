@@ -26,6 +26,12 @@ The `oauth:encrypt-tokens` command will:
 
 > **Important:** Ensure your `APP_KEY` is set before running this command. The same key must be used to decrypt the tokens later. The command is safe to re-run — it will not double-encrypt already encrypted values.
 
+## 2. Verify Laravel version
+
+v2 requires **Laravel 11 or later**. Laravel 10 is no longer supported (it reached EOL in February 2025).
+
+If you are still on Laravel 10, upgrade to Laravel 11+ before updating this package.
+
 ## 3. Update event listeners
 
 The event class `EventsOAuthTokenUpdated` has been renamed to `OAuthTokenUpdated`.
