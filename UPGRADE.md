@@ -1,35 +1,30 @@
 # Upgrading from v1.x to v2.x
 
-## 1. Run the new migration
+## 1. Migrate the database and encrypt tokens
 
-v2 changes the `oauth` table schema. Publish and run the migration:
+v2 encrypts OAuth tokens at rest. **You must run the migration and encrypt existing tokens before any request hits the new code**, otherwise plaintext tokens will fail to decrypt.
+
+Put your application in maintenance mode, then run all steps together:
 
 ```bash
+php artisan down
 php artisan vendor:publish --tag=oauth-migrations
 php artisan migrate
+php artisan oauth:encrypt-tokens
+php artisan up
 ```
 
-This will:
+The migration will:
 - Change `oauth_refresh_token` from `string(255)` to `longText` (required for encrypted values).
 - Change `oauth_token_expires_at` from `integer` to `unsignedBigInteger` (fixes the 2038 problem).
 - Add an index on `oauth_id`.
 
-## 2. Encrypt existing tokens
-
-v2 encrypts OAuth tokens at rest using Laravel's `encrypted` cast. **Existing plaintext tokens must be migrated** or they will fail to decrypt.
-
-Run the provided command:
-
-```bash
-php artisan oauth:encrypt-tokens
-```
-
-The command will:
-- Find all OAuth records with tokens.
+The `oauth:encrypt-tokens` command will:
+- Find all OAuth records with plaintext tokens.
 - Skip records that are already encrypted.
-- Encrypt plaintext tokens in place.
+- Encrypt tokens in place.
 
-> **Important:** Ensure your `APP_KEY` is set before running this command. The same key must be used to decrypt the tokens later.
+> **Important:** Ensure your `APP_KEY` is set before running this command. The same key must be used to decrypt the tokens later. The command is safe to re-run — it will not double-encrypt already encrypted values.
 
 ## 3. Update event listeners
 

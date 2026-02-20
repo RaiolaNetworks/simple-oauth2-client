@@ -56,6 +56,33 @@ it('skips already encrypted tokens', function () {
     expect($record->oauth_refresh_token)->toBe($encryptedRefresh);
 });
 
+it('encrypts only the plaintext field when the other is already encrypted', function () {
+    $user = TestUser::factory()->create();
+
+    $encryptedToken = Crypt::encryptString('already_encrypted_token');
+
+    DB::table('oauth')->insert([
+        'user_id'                => $user->id,
+        'oauth_id'               => 'partial-encrypted',
+        'oauth_token'            => $encryptedToken,
+        'oauth_refresh_token'    => 'plaintext_refresh',
+        'oauth_token_expires_at' => time() + 3600,
+        'created_at'             => now(),
+        'updated_at'             => now(),
+    ]);
+
+    $this->artisan('oauth:encrypt-tokens')
+        ->assertExitCode(Command::SUCCESS);
+
+    $record = DB::table('oauth')->where('oauth_id', 'partial-encrypted')->first();
+
+    // oauth_token should remain unchanged (already encrypted)
+    expect($record->oauth_token)->toBe($encryptedToken);
+    // oauth_refresh_token should now be encrypted
+    expect($record->oauth_refresh_token)->not->toBe('plaintext_refresh');
+    expect(Crypt::decryptString($record->oauth_refresh_token))->toBe('plaintext_refresh');
+});
+
 it('handles empty table gracefully', function () {
     $this->artisan('oauth:encrypt-tokens')
         ->expectsOutput('No OAuth records found.')

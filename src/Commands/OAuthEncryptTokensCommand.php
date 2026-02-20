@@ -34,24 +34,19 @@ class OAuthEncryptTokensCommand extends Command
         foreach ($records as $record) {
             $update = [];
 
-            if ($record->oauth_token !== null) {
-                if ($this->isAlreadyEncrypted($record->oauth_token)) {
-                    $skipped++;
-
-                    continue;
-                }
+            if ($record->oauth_token !== null && ! $this->isAlreadyEncrypted($record->oauth_token)) {
                 $update['oauth_token'] = Crypt::encryptString($record->oauth_token);
             }
 
-            if ($record->oauth_refresh_token !== null) {
-                if (! $this->isAlreadyEncrypted($record->oauth_refresh_token)) {
-                    $update['oauth_refresh_token'] = Crypt::encryptString($record->oauth_refresh_token);
-                }
+            if ($record->oauth_refresh_token !== null && ! $this->isAlreadyEncrypted($record->oauth_refresh_token)) {
+                $update['oauth_refresh_token'] = Crypt::encryptString($record->oauth_refresh_token);
             }
 
             if ($update !== []) {
                 DB::table('oauth')->where('id', $record->id)->update($update);
                 $encrypted++;
+            } else {
+                $skipped++;
             }
         }
 
