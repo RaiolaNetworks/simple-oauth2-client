@@ -7,6 +7,7 @@ namespace Raiolanetworks\OAuth;
 use Raiolanetworks\OAuth\Commands\OAuthCommand;
 use Raiolanetworks\OAuth\Contracts\OAuthGroupHandlerInterface;
 use Raiolanetworks\OAuth\Contracts\OAuthUserHandlerInterface;
+use Raiolanetworks\OAuth\Services\OAuthService;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
@@ -22,17 +23,9 @@ class OAuthServiceProvider extends PackageServiceProvider
             ->hasCommand(OAuthCommand::class);
 
         // Register the main class to use with the facade
-        $this->app->singleton('oauth', fn () => $this);
+        $this->app->singleton('oauth', fn ($app) => $app->make(OAuthService::class));
 
         $this->bindUserGroupHandlers();
-    }
-
-    /**
-     * Method to load the migrations when php migrate is run in the console.
-     */
-    public function loadMigrations(): void
-    {
-        $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
     }
 
     /**

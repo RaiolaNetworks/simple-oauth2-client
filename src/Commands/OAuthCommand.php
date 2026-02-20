@@ -34,9 +34,6 @@ class OAuthCommand extends Command
         $this->setEnvironmentVariables();
         info('Some new variables have been created in the environment file “.env”.');
 
-        info('Loading migrations...');
-        app()->make('oauth')->loadMigrations();
-
         info('Running migrations...');
         $this->call('migrate');
 
