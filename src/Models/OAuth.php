@@ -33,6 +33,17 @@ class OAuth extends Model
         'oauth_token_expires_at',
     ];
 
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'oauth_token' => 'encrypted',
+            'oauth_refresh_token' => 'encrypted',
+        ];
+    }
+
     // @phpstan-ignore-next-line
     public function user(): BelongsTo
     {
