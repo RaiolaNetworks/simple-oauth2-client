@@ -10,9 +10,9 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Routing\Controller;
 use Illuminate\Routing\Redirector;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redirect;
-use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Facades\Session;
 use League\OAuth2\Client\Provider\Exception\IdentityProviderException;
 use League\OAuth2\Client\Token\AccessToken;
@@ -59,7 +59,7 @@ class OAuthController extends Controller
         return Redirect::away($authUrl);
     }
 
-    public function callback(): RedirectResponse
+    public function callback(Request $request): RedirectResponse
     {
         /** @var string $guardName */
         $guardName = config('oauth.guard_name');
@@ -71,8 +71,8 @@ class OAuthController extends Controller
         try {
             $session = Session::all();
 
-            $code  = Request::get('code');
-            $state = Request::get('state');
+            $code  = $request->get('code');
+            $state = $request->get('state');
 
             if (! isset($code)) {
                 throw new IdentityProviderException('Invalid code', 0, 'Invalid code');
