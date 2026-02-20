@@ -8,9 +8,9 @@ use GuzzleHttp\Exception\ClientException;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Routing\Redirector;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Facades\Session;
@@ -121,7 +121,7 @@ class OAuthController extends Controller
         }
     }
 
-    public function renew(): null|Redirector|RedirectResponse
+    public function renew(): ?RedirectResponse
     {
         /** @var string $guardName */
         $guardName = config('oauth.guard_name');

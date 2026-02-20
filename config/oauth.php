@@ -31,9 +31,9 @@ return [
      * login_route_name:                 Route name for the login page
      * redirect_route_name_callback_ok:  Route name to redirect after successful OAuth callback
      */
-    'user_model_name' => 'App\Models\User',
-    'guard_name' => 'web',
-    'login_route_name' => 'login',
+    'user_model_name'                 => 'App\Models\User',
+    'guard_name'                      => 'web',
+    'login_route_name'                => 'login',
     'redirect_route_name_callback_ok' => 'home',
 
     /**
@@ -60,5 +60,5 @@ return [
      * If the value is true, it will add the 'offline_access' scope in the OAuth
      * provider configuration.
      */
-    'offline_access' => true,
+    'offline_access'                  => true,
 ];

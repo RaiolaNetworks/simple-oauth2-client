@@ -131,6 +131,7 @@ class OAuthCommand extends Command
             if ($env !== false) {
                 /** @var string $env */
                 $quotedKey = preg_quote($key, '/');
+
                 if (strpos($env, "{$key}=") !== false) {
                     $env = preg_replace("/^{$quotedKey}=.*/m", "{$key}=\"{$value}\"", $env);
                 } else {

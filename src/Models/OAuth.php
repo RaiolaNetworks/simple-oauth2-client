@@ -39,7 +39,7 @@ class OAuth extends Model
     protected function casts(): array
     {
         return [
-            'oauth_token' => 'encrypted',
+            'oauth_token'         => 'encrypted',
             'oauth_refresh_token' => 'encrypted',
         ];
     }
