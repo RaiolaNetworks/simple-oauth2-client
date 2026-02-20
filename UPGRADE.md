@@ -1,6 +1,12 @@
 # Upgrading from v1.x to v2.x
 
-## 1. Migrate the database and encrypt tokens
+## 1. Verify Laravel version
+
+v2 requires **Laravel 11 or later**. Laravel 10 is no longer supported (it reached EOL in February 2025).
+
+If you are still on Laravel 10, upgrade to Laravel 11+ before updating this package.
+
+## 2. Migrate the database and encrypt tokens
 
 v2 encrypts OAuth tokens at rest. **You must run the migration and encrypt existing tokens before any request hits the new code**, otherwise plaintext tokens will fail to decrypt.
 
@@ -25,12 +31,6 @@ The `oauth:encrypt-tokens` command will:
 - Encrypt tokens in place.
 
 > **Important:** Ensure your `APP_KEY` is set before running this command. The same key must be used to decrypt the tokens later. The command is safe to re-run — it will not double-encrypt already encrypted values.
-
-## 2. Verify Laravel version
-
-v2 requires **Laravel 11 or later**. Laravel 10 is no longer supported (it reached EOL in February 2025).
-
-If you are still on Laravel 10, upgrade to Laravel 11+ before updating this package.
 
 ## 3. Update event listeners
 
