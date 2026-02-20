@@ -92,7 +92,7 @@ class OAuthController extends Controller
             $callback = $this->provider->getResourceOwner($accessToken)->toArray();
 
             $user = $this->userHandler->handleUser($callback, $accessToken);
-            $this->groupHandler->handleGroups($callback['groups'], $user);
+            $this->groupHandler->handleGroups($callback['groups'] ?? [], $user);
 
             $oauthData = OAuth::updateOrCreate(
                 [
@@ -106,9 +106,11 @@ class OAuthController extends Controller
                 ]
             );
 
-            EventsOAuthTokenUpdated::dispatch($user, $oauthData, $callback['groups']);
+            EventsOAuthTokenUpdated::dispatch($user, $oauthData, $callback['groups'] ?? []);
             Session::remove('oauth2-state');
             Session::remove('oauth2-pkceCode');
+
+            Session::regenerate();
 
             /** @var Authenticatable $user */
             Auth::guard($guardName)->login($user);
@@ -160,7 +162,7 @@ class OAuthController extends Controller
                 ]);
 
                 /** @var Model $user */
-                EventsOAuthTokenUpdated::dispatch($user, $oauthData, $callback['groups']);
+                EventsOAuthTokenUpdated::dispatch($user, $oauthData, $callback['groups'] ?? []);
             }
         }
 
