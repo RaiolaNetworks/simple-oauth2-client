@@ -18,10 +18,10 @@ return new class extends Migration
             $table->id();
 
             $table->foreignId('user_id')->constrained($this->getTableName())->cascadeOnDelete();
-            $table->string('oauth_id')->nullable();
+            $table->string('oauth_id')->nullable()->index();
             $table->longText('oauth_token')->nullable();
-            $table->string('oauth_refresh_token')->nullable();
-            $table->integer('oauth_token_expires_at')->nullable();
+            $table->longText('oauth_refresh_token')->nullable();
+            $table->unsignedBigInteger('oauth_token_expires_at')->nullable();
 
             $table->timestamps();
         });

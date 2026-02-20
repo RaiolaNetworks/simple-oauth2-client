@@ -130,8 +130,9 @@ class OAuthCommand extends Command
 
             if ($env !== false) {
                 /** @var string $env */
+                $quotedKey = preg_quote($key, '/');
                 if (strpos($env, "{$key}=") !== false) {
-                    $env = preg_replace("/^{$key}=.*/m", "{$key}=\"{$value}\"", $env);
+                    $env = preg_replace("/^{$quotedKey}=.*/m", "{$key}=\"{$value}\"", $env);
                 } else {
                     $env .= "\n{$key}=\"{$value}\"";
                 }
@@ -161,7 +162,7 @@ class OAuthCommand extends Command
 
     protected function setConfigVariable(string $key, mixed $value): void
     {
-        $configPath = 'config/oauth.php';
+        $configPath = config_path('oauth.php');
 
         if (! file_exists($configPath)) {
             throw new Exception('Unable to find the configuration file...');

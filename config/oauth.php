@@ -26,14 +26,14 @@ return [
     /**
      * Integration configuration variables.
      *
-     * user_model_name:             Model name in your project of the Authenticatable users (default: \App\Models\User)
-     * guard_name:                  Client ID of the OAuth system
-     * login_route_name:            Client secret key of the OAuth system
-     * redirect_route_name_callback_ok:  Route of the project receiving the callback
+     * user_model_name:                  Model name in your project of the Authenticatable users (default: \App\Models\User)
+     * guard_name:                       Name of the authentication guard to use
+     * login_route_name:                 Route name for the login page
+     * redirect_route_name_callback_ok:  Route name to redirect after successful OAuth callback
      */
-    'user_model_name'                 => 'Raiolanetworks\OAuth\Tests\Models\TestUser',
-    'guard_name'                      => 'web',
-    'login_route_name'                => 'login',
+    'user_model_name' => 'App\Models\User',
+    'guard_name' => 'web',
+    'login_route_name' => 'login',
     'redirect_route_name_callback_ok' => 'home',
 
     /**
@@ -60,5 +60,5 @@ return [
      * If the value is true, it will add the 'offline_access' scope in the OAuth
      * provider configuration.
      */
-    'offline_access'                  => true,
+    'offline_access' => true,
 ];

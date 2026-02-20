@@ -28,8 +28,8 @@ it('run the install command', function () {
 });
 
 it('verify that if the configuration file does not exist it returns an exception', function () {
-    $configPath = 'config/oauth.php';
-    $backupPath = 'config/oauth_backup.php';
+    $configPath = config_path('oauth.php');
+    $backupPath = config_path('oauth_backup.php');
 
     if (file_exists($configPath)) {
         rename($configPath, $backupPath);
