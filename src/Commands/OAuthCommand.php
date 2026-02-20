@@ -171,7 +171,7 @@ class OAuthCommand extends Command
 
         config()->set('oauth.' . $key, $value);
 
-        /** @var array<string> $lines */
+        /** @var list<string> $lines */
         $lines = file($configPath);
 
         foreach ($lines as &$line) {

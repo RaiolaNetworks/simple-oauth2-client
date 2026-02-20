@@ -105,7 +105,7 @@ class OAuthController extends Controller
 
             Session::regenerate();
 
-            /** @var Authenticatable $user */
+            /** @var Authenticatable&Model $user */
             Auth::guard($guardName)->login($user);
 
             /** @var string $redirectRouteCallbackOk */
