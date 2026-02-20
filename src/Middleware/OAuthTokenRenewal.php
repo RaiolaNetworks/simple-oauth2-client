@@ -19,7 +19,11 @@ class OAuthTokenRenewal
     public function handle(Request $request, Closure $next): Response
     {
         $authController = app(OAuthController::class);
-        $authController->renew();
+        $response = $authController->renew();
+
+        if ($response !== null) {
+            return $response;
+        }
 
         return $next($request);
     }
