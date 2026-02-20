@@ -11,7 +11,7 @@ use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 use Raiolanetworks\OAuth\Models\OAuth;
 
-class EventsOAuthTokenUpdated
+class OAuthTokenUpdated
 {
     use Dispatchable;
     use InteractsWithSockets;

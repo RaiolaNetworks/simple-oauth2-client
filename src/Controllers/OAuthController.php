@@ -18,25 +18,18 @@ use League\OAuth2\Client\Provider\Exception\IdentityProviderException;
 use League\OAuth2\Client\Token\AccessToken;
 use Raiolanetworks\OAuth\Contracts\OAuthGroupHandlerInterface;
 use Raiolanetworks\OAuth\Contracts\OAuthUserHandlerInterface;
-use Raiolanetworks\OAuth\Events\EventsOAuthTokenUpdated;
+use Raiolanetworks\OAuth\Events\OAuthTokenUpdated;
 use Raiolanetworks\OAuth\Models\OAuth;
 use Raiolanetworks\OAuth\Services\OAuthService;
 use Symfony\Component\HttpFoundation\RedirectResponse as HttpFoundationRedirectResponse;
 
 class OAuthController extends Controller
 {
-    protected OAuthService $provider;
-
-    protected OAuthUserHandlerInterface $userHandler;
-
-    protected OAuthGroupHandlerInterface $groupHandler;
-
-    public function __construct(?OAuthService $provider = null, ?OAuthUserHandlerInterface $userHandler = null, ?OAuthGroupHandlerInterface $groupHandler = null)
-    {
-        $this->provider     = $provider ?? app(OAuthService::class);
-        $this->userHandler  = $userHandler ?? app(OAuthUserHandlerInterface::class);
-        $this->groupHandler = $groupHandler ?? app(OAuthGroupHandlerInterface::class);
-    }
+    public function __construct(
+        protected OAuthService $provider,
+        protected OAuthUserHandlerInterface $userHandler,
+        protected OAuthGroupHandlerInterface $groupHandler,
+    ) {}
 
     public function request(): RedirectResponse|HttpFoundationRedirectResponse|Redirector
     {
@@ -106,7 +99,7 @@ class OAuthController extends Controller
                 ]
             );
 
-            EventsOAuthTokenUpdated::dispatch($user, $oauthData, $callback['groups'] ?? []);
+            OAuthTokenUpdated::dispatch($user, $oauthData, $callback['groups'] ?? []);
             Session::remove('oauth2-state');
             Session::remove('oauth2-pkceCode');
 
@@ -162,7 +155,7 @@ class OAuthController extends Controller
                 ]);
 
                 /** @var Model $user */
-                EventsOAuthTokenUpdated::dispatch($user, $oauthData, $callback['groups'] ?? []);
+                OAuthTokenUpdated::dispatch($user, $oauthData, $callback['groups'] ?? []);
             }
         }
 

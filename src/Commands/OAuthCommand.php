@@ -183,8 +183,8 @@ class OAuthCommand extends Command
             $pattern = "/(['\"])" . preg_quote($key, '/') . "\\1\s*=>\s*(.+?),/";
 
             if (preg_match($pattern, $trimLine)) {
-                $valorFormateado = var_export($value, true);
-                $line            = preg_replace($pattern, "'$key' => $valorFormateado,", $line);
+                $formattedValue = var_export($value, true);
+                $line           = preg_replace($pattern, "'$key' => $formattedValue,", $line);
 
                 break;
             }

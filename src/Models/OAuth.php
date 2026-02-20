@@ -47,9 +47,9 @@ class OAuth extends Model
     // @phpstan-ignore-next-line
     public function user(): BelongsTo
     {
-        /** @var Model $model */
+        /** @var class-string<Model> $model */
         $model = config('oauth.user_model_name');
 
-        return $this->belongsTo((new $model())::class);
+        return $this->belongsTo($model);
     }
 }
