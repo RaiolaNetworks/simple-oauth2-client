@@ -7,12 +7,12 @@ namespace Raiolanetworks\OAuth\Facades;
 use Illuminate\Support\Facades\Facade;
 
 /**
- * @see \Raiolanetworks\Oauth\Oauth
+ * @see \Raiolanetworks\OAuth\Services\OAuthService
  */
 class OAuth extends Facade
 {
     protected static function getFacadeAccessor(): string
     {
-        return \Raiolanetworks\OAuth\OAuth::class;
+        return 'oauth';
     }
 }

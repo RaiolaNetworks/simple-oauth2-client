@@ -10,7 +10,7 @@ use League\OAuth2\Client\Token\AccessTokenInterface;
 interface OAuthUserHandlerInterface
 {
     /**
-     * Handle user loged with OAuth provider.
+     * Handle user logged with OAuth provider.
      *
      * @param array<string,string> $data
      */

@@ -20,13 +20,22 @@ class OAuthService extends GenericProvider
             $scopes .= ' offline_access';
         }
 
+        /** @var string $baseUrl */
+        $baseUrl = config('oauth.base_url');
+
+        /** @var string $appUrl */
+        $appUrl = config('app.url');
+
+        /** @var string $callback */
+        $callback = config('oauth.callback');
+
         $options = array_merge($options, [
             'clientId'                => config('oauth.client_id'),
             'clientSecret'            => config('oauth.client_secret'),
-            'redirectUri'             => config('app.url') . config('oauth.callback'),
-            'urlAuthorize'            => config('oauth.base_url') . '/application/o/authorize/',
-            'urlAccessToken'          => config('oauth.base_url') . '/application/o/token/',
-            'urlResourceOwnerDetails' => config('oauth.base_url') . '/application/o/userinfo/',
+            'redirectUri'             => $appUrl . $callback,
+            'urlAuthorize'            => $baseUrl . '/application/o/authorize/',
+            'urlAccessToken'          => $baseUrl . '/application/o/token/',
+            'urlResourceOwnerDetails' => $baseUrl . '/application/o/userinfo/',
             'pkceMethod'              => GenericProvider::PKCE_METHOD_S256,
             'scopes'                  => $scopes,
             'responseResourceOwnerId' => 'sub',
