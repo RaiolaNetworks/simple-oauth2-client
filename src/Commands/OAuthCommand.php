@@ -34,9 +34,6 @@ class OAuthCommand extends Command
         $this->setEnvironmentVariables();
         info('Some new variables have been created in the environment file “.env”.');
 
-        info('Loading migrations...');
-        app()->make('oauth')->loadMigrations();
-
         info('Running migrations...');
         $this->call('migrate');
 
@@ -133,8 +130,10 @@ class OAuthCommand extends Command
 
             if ($env !== false) {
                 /** @var string $env */
+                $quotedKey = preg_quote($key, '/');
+
                 if (strpos($env, "{$key}=") !== false) {
-                    $env = preg_replace("/^{$key}=.*/m", "{$key}=\"{$value}\"", $env);
+                    $env = preg_replace("/^{$quotedKey}=.*/m", "{$key}=\"{$value}\"", $env);
                 } else {
                     $env .= "\n{$key}=\"{$value}\"";
                 }
@@ -164,7 +163,7 @@ class OAuthCommand extends Command
 
     protected function setConfigVariable(string $key, mixed $value): void
     {
-        $configPath = 'config/oauth.php';
+        $configPath = config_path('oauth.php');
 
         if (! file_exists($configPath)) {
             throw new Exception('Unable to find the configuration file...');
@@ -172,7 +171,7 @@ class OAuthCommand extends Command
 
         config()->set('oauth.' . $key, $value);
 
-        /** @var array<string> $lines */
+        /** @var list<string> $lines */
         $lines = file($configPath);
 
         foreach ($lines as &$line) {
@@ -185,8 +184,8 @@ class OAuthCommand extends Command
             $pattern = "/(['\"])" . preg_quote($key, '/') . "\\1\s*=>\s*(.+?),/";
 
             if (preg_match($pattern, $trimLine)) {
-                $valorFormateado = var_export($value, true);
-                $line            = preg_replace($pattern, "'$key' => $valorFormateado,", $line);
+                $formattedValue = var_export($value, true);
+                $line           = preg_replace($pattern, "'$key' => $formattedValue,", $line);
 
                 break;
             }

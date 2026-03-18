@@ -10,3 +10,10 @@ parameters:
         - routes/
         - database/
 
+    reportUnmatchedIgnoredErrors: false
+
+    ignoreErrors:
+        -
+            message: '#Called .env. outside of the config directory#'
+            path: config/
+

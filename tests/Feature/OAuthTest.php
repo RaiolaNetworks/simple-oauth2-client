@@ -2,16 +2,14 @@
 
 declare(strict_types=1);
 
-use Raiolanetworks\OAuth\OAuth;
+use Raiolanetworks\OAuth\Facades\OAuth;
 
 it('returns the correct facade accessor', function () {
-    $oauth = new OAuth();
-
-    $reflection = new ReflectionClass($oauth);
+    $reflection = new ReflectionClass(OAuth::class);
     $method     = $reflection->getMethod('getFacadeAccessor');
     $method->setAccessible(true);
 
-    $result = $method->invoke($oauth);
+    $result = $method->invoke(null);
 
     expect($result)->toBe('oauth');
 });

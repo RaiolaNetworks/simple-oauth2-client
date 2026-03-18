@@ -12,7 +12,7 @@ use Raiolanetworks\OAuth\Models\OAuth;
 class BaseOAuthUserHandler implements OAuthUserHandlerInterface
 {
     /**
-     * Handle user loged with OAuth provider.
+     * Handle user logged with OAuth provider.
      *
      * @param array<mixed> $userData
      */

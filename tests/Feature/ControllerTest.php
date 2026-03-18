@@ -28,9 +28,8 @@ it('redirect authenticated users to the homepage', function () {
     $mockGuard = Mockery::mock(Guard::class);
     $mockGuard->shouldReceive('check')->andReturnTrue();
 
-    Auth::shouldReceive('guard')
-        ->with(config('oauth.guard_name'))
-        ->andReturn($mockGuard);
+    Auth::shouldReceive('guard')->andReturn($mockGuard);
+    Auth::shouldReceive('userResolver')->andReturn(fn () => null);
 
     $response = get(route('oauth.request'));
 
@@ -48,9 +47,8 @@ it('redirects unauthenticated users to the OAuth provider', function () {
     $mockGuard = Mockery::mock(Guard::class);
     $mockGuard->shouldReceive('check')->andReturnFalse();
 
-    Auth::shouldReceive('guard')
-        ->with(config('oauth.guard_name'))
-        ->andReturn($mockGuard);
+    Auth::shouldReceive('guard')->andReturn($mockGuard);
+    Auth::shouldReceive('userResolver')->andReturn(fn () => null);
 
     $mockProvider = Mockery::mock(OAuthService::class);
     $mockProvider->shouldReceive('getAuthorizationUrl')
@@ -83,9 +81,8 @@ it('redirect where the user intends to go if authenticated in the callback', fun
     $mockGuard = Mockery::mock(Guard::class);
     $mockGuard->shouldReceive('check')->andReturnTrue();
 
-    Auth::shouldReceive('guard')
-        ->with(config('oauth.guard_name'))
-        ->andReturn($mockGuard);
+    Auth::shouldReceive('guard')->andReturn($mockGuard);
+    Auth::shouldReceive('userResolver')->andReturn(fn () => null);
 
     $response = get(route('oauth.callback'));
 
@@ -175,8 +172,8 @@ it('logs in the user after a successful OAuth callback', function () {
     instance(OAuthGroupHandlerInterface::class, $mockOAuthGroupHandlerInterface);
 
     Auth::shouldReceive('guard')
-        ->with(config('oauth.guard_name'))
         ->andReturn(Mockery::mock(Guard::class, ['login' => null, 'check' => false]));
+    Auth::shouldReceive('userResolver')->andReturn(fn () => null);
 
     $response = get(route('oauth.callback', [
         'code'  => $validCode,

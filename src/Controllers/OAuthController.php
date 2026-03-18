@@ -8,35 +8,28 @@ use GuzzleHttp\Exception\ClientException;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Routing\Redirector;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redirect;
-use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Facades\Session;
 use League\OAuth2\Client\Provider\Exception\IdentityProviderException;
 use League\OAuth2\Client\Token\AccessToken;
 use Raiolanetworks\OAuth\Contracts\OAuthGroupHandlerInterface;
 use Raiolanetworks\OAuth\Contracts\OAuthUserHandlerInterface;
-use Raiolanetworks\OAuth\Events\EventsOAuthTokenUpdated;
+use Raiolanetworks\OAuth\Events\OAuthTokenUpdated;
 use Raiolanetworks\OAuth\Models\OAuth;
 use Raiolanetworks\OAuth\Services\OAuthService;
 use Symfony\Component\HttpFoundation\RedirectResponse as HttpFoundationRedirectResponse;
 
 class OAuthController extends Controller
 {
-    protected OAuthService $provider;
-
-    protected OAuthUserHandlerInterface $userHandler;
-
-    protected OAuthGroupHandlerInterface $groupHandler;
-
-    public function __construct(?OAuthService $provider = null, ?OAuthUserHandlerInterface $userHandler = null, ?OAuthGroupHandlerInterface $groupHandler = null)
-    {
-        $this->provider     = $provider ?? app(OAuthService::class);
-        $this->userHandler  = $userHandler ?? app(OAuthUserHandlerInterface::class);
-        $this->groupHandler = $groupHandler ?? app(OAuthGroupHandlerInterface::class);
-    }
+    public function __construct(
+        protected OAuthService $provider,
+        protected OAuthUserHandlerInterface $userHandler,
+        protected OAuthGroupHandlerInterface $groupHandler,
+    ) {}
 
     public function request(): RedirectResponse|HttpFoundationRedirectResponse|Redirector
     {
@@ -59,7 +52,7 @@ class OAuthController extends Controller
         return Redirect::away($authUrl);
     }
 
-    public function callback(): RedirectResponse
+    public function callback(Request $request): RedirectResponse
     {
         /** @var string $guardName */
         $guardName = config('oauth.guard_name');
@@ -71,8 +64,8 @@ class OAuthController extends Controller
         try {
             $session = Session::all();
 
-            $code  = Request::get('code');
-            $state = Request::get('state');
+            $code  = $request->get('code');
+            $state = $request->get('state');
 
             if (! isset($code)) {
                 throw new IdentityProviderException('Invalid code', 0, 'Invalid code');
@@ -92,7 +85,7 @@ class OAuthController extends Controller
             $callback = $this->provider->getResourceOwner($accessToken)->toArray();
 
             $user = $this->userHandler->handleUser($callback, $accessToken);
-            $this->groupHandler->handleGroups($callback['groups'], $user);
+            $this->groupHandler->handleGroups($callback['groups'] ?? [], $user);
 
             $oauthData = OAuth::updateOrCreate(
                 [
@@ -106,11 +99,13 @@ class OAuthController extends Controller
                 ]
             );
 
-            EventsOAuthTokenUpdated::dispatch($user, $oauthData, $callback['groups']);
+            OAuthTokenUpdated::dispatch($user, $oauthData, $callback['groups'] ?? []);
             Session::remove('oauth2-state');
             Session::remove('oauth2-pkceCode');
 
-            /** @var Authenticatable $user */
+            Session::regenerate();
+
+            /** @var Authenticatable&Model $user */
             Auth::guard($guardName)->login($user);
 
             /** @var string $redirectRouteCallbackOk */
@@ -126,7 +121,7 @@ class OAuthController extends Controller
         }
     }
 
-    public function renew(): null|Redirector|RedirectResponse
+    public function renew(): ?RedirectResponse
     {
         /** @var string $guardName */
         $guardName = config('oauth.guard_name');
@@ -160,7 +155,7 @@ class OAuthController extends Controller
                 ]);
 
                 /** @var Model $user */
-                EventsOAuthTokenUpdated::dispatch($user, $oauthData, $callback['groups']);
+                OAuthTokenUpdated::dispatch($user, $oauthData, $callback['groups'] ?? []);
             }
         }
 
