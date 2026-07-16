@@ -1,3 +1,32 @@
+# Upgrading from v2.x to v3.x
+
+v3 is a maintenance release that drops end-of-life platforms and removes previously deprecated code. There are **no behavioural changes** to the OAuth flow.
+
+## 1. Verify platform versions
+
+v3 requires:
+
+- **PHP 8.2 or later** (8.2, 8.3, 8.4, 8.5).
+- **Laravel 12 or later**. Laravel 11 is no longer supported (its security support ended on March 12, 2026).
+
+If you are still on Laravel 11, you can safely remain on the `2.x` release line — Composer will not upgrade you to `3.x` until your framework meets the new constraint. Upgrade to Laravel 12+ before requiring `^3.0`.
+
+## 2. Remove the deprecated event alias
+
+The `EventsOAuthTokenUpdated` class (deprecated in v2) has been removed. Use `OAuthTokenUpdated` instead:
+
+```php
+// Before (removed in v3)
+use Raiolanetworks\OAuth\Events\EventsOAuthTokenUpdated;
+
+// After
+use Raiolanetworks\OAuth\Events\OAuthTokenUpdated;
+```
+
+No database migration or token re-encryption is required for the v2 → v3 upgrade.
+
+---
+
 # Upgrading from v1.x to v2.x
 
 ## 1. Verify Laravel version

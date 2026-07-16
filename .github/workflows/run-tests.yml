@@ -19,8 +19,8 @@ jobs:
       fail-fast: true
       matrix:
         os: [ubuntu-latest]
-        php: [8.4, 8.3, 8.2]
-        laravel: [13.*, 12.*, 11.*]
+        php: [8.5, 8.4, 8.3, 8.2]
+        laravel: [13.*, 12.*]
         stability: [prefer-lowest, prefer-stable]
         include:
           - laravel: 13.*
@@ -29,9 +29,6 @@ jobs:
           - laravel: 12.*
             testbench: ^10.0
             carbon: ^2.63|^3.0
-          - laravel: 11.*
-            testbench: ^9.4
-            carbon: ^2.63
         exclude:
           - php: 8.2
             laravel: 13.*

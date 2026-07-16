@@ -13,6 +13,13 @@ The package is designed to work flexibly with any user model that implements the
 
 [<img src="https://cdn-assets.raiolanetworks.com/dist/images/logos/logo-blue.svg" width="419px" />](https://raiolanetworks.com)
 
+## Requirements
+
+- PHP `8.2`, `8.3`, `8.4` or `8.5`
+- Laravel `12.x` or `13.x`
+
+> Using Laravel 11 or older? Stay on the `2.x` release line of this package — Composer will keep you on a compatible version automatically. See [UPGRADE](UPGRADE.md) for the `2.x` → `3.x` migration.
+
 ## Installation
 
 You can install the package via composer:
