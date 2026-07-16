@@ -4,18 +4,16 @@ declare(strict_types=1);
 
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Raiolanetworks\OAuth\Controllers\OAuthController;
 use Raiolanetworks\OAuth\Middleware\OAuthTokenRenewal;
+use Raiolanetworks\OAuth\Services\TokenRenewalService;
 use Symfony\Component\HttpFoundation\Response;
 
-it('calls the OAuthController renew method and allows the request to proceed', function () {
-    $mockController = Mockery::mock(OAuthController::class);
+it('calls the token renewal service and allows the request to proceed', function () {
+    $mockService = Mockery::mock(TokenRenewalService::class);
 
-    $mockController->shouldReceive('renew')->once()->andReturnNull();
+    $mockService->shouldReceive('renew')->once()->andReturnNull();
 
-    $middleware = new OAuthTokenRenewal();
-
-    $this->instance(OAuthController::class, $mockController);
+    $middleware = new OAuthTokenRenewal($mockService);
 
     $response = $middleware->handle(Request::create('/test-url', 'GET'), fn () => new Response('Next middleware called'));
 
@@ -23,14 +21,12 @@ it('calls the OAuthController renew method and allows the request to proceed', f
 });
 
 it('returns the redirect response from renew when token renewal triggers a redirect', function () {
-    $mockController = Mockery::mock(OAuthController::class);
+    $mockService = Mockery::mock(TokenRenewalService::class);
 
     $redirect = new RedirectResponse('/login');
-    $mockController->shouldReceive('renew')->once()->andReturn($redirect);
+    $mockService->shouldReceive('renew')->once()->andReturn($redirect);
 
-    $middleware = new OAuthTokenRenewal();
-
-    $this->instance(OAuthController::class, $mockController);
+    $middleware = new OAuthTokenRenewal($mockService);
 
     $response = $middleware->handle(Request::create('/test-url', 'GET'), fn () => new Response('Next middleware called'));
 
