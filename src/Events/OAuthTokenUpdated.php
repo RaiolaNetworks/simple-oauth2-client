@@ -26,6 +26,5 @@ class OAuthTokenUpdated
     {
         $this->user      = $user->refresh();
         $this->oauthData = $oauthData->refresh();
-        $this->groups    = $groups;
     }
 }
