@@ -6,11 +6,15 @@ namespace Raiolanetworks\OAuth\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
-use Raiolanetworks\OAuth\Controllers\OAuthController;
+use Raiolanetworks\OAuth\Services\TokenRenewalService;
 use Symfony\Component\HttpFoundation\Response;
 
 class OAuthTokenRenewal
 {
+    public function __construct(
+        protected TokenRenewalService $tokenRenewal,
+    ) {}
+
     /**
      * Handle an incoming request.
      *
@@ -18,8 +22,7 @@ class OAuthTokenRenewal
      */
     public function handle(Request $request, Closure $next): Response
     {
-        $authController = app(OAuthController::class);
-        $response       = $authController->renew();
+        $response = $this->tokenRenewal->renew();
 
         if ($response !== null) {
             return $response;

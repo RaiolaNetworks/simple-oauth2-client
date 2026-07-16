@@ -11,7 +11,7 @@ interface OAuthGroupHandlerInterface
     /**
      * Handle groups retrieved from OAuth provider.
      *
-     * @param array<string,string> $groups
+     * @param array<array-key, string> $groups
      */
     public function handleGroups(array $groups, Model $user): void;
 }
