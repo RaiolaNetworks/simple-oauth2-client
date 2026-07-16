@@ -21,6 +21,7 @@ use Raiolanetworks\OAuth\Contracts\OAuthUserHandlerInterface;
 use Raiolanetworks\OAuth\Events\OAuthTokenUpdated;
 use Raiolanetworks\OAuth\Models\OAuth;
 use Raiolanetworks\OAuth\Services\OAuthService;
+use Raiolanetworks\OAuth\Services\TokenRenewalService;
 use Symfony\Component\HttpFoundation\RedirectResponse as HttpFoundationRedirectResponse;
 
 class OAuthController extends Controller
@@ -62,20 +63,24 @@ class OAuthController extends Controller
         }
 
         try {
-            $session = Session::all();
-
-            $code  = $request->get('code');
-            $state = $request->get('state');
+            $code         = $request->query('code');
+            $state        = $request->query('state');
+            $sessionState = Session::get('oauth2-state');
+            $pkceCode     = Session::get('oauth2-pkceCode');
 
             if (! isset($code)) {
                 throw new IdentityProviderException('Invalid code', 0, 'Invalid code');
             }
 
-            if (! isset($state) || ! isset($session['oauth2-state']) || $state !== $session['oauth2-state']) {
+            if (! isset($state) || $sessionState === null || $state !== $sessionState) {
                 throw new IdentityProviderException('Invalid state', 0, 'Invalid state');
             }
 
-            $this->provider->setPkceCode($session['oauth2-pkceCode']);
+            if (! is_string($pkceCode)) {
+                throw new IdentityProviderException('Invalid PKCE code', 0, 'Invalid PKCE code');
+            }
+
+            $this->provider->setPkceCode($pkceCode);
 
             /** @var AccessToken $accessToken */
             $accessToken = $this->provider->getAccessToken('authorization_code', [
@@ -83,6 +88,10 @@ class OAuthController extends Controller
             ]);
 
             $callback = $this->provider->getResourceOwner($accessToken)->toArray();
+
+            if (! isset($callback['sub'])) {
+                throw new IdentityProviderException('Missing resource owner identifier', 0, 'Missing resource owner identifier');
+            }
 
             $user = $this->userHandler->handleUser($callback, $accessToken);
             $this->groupHandler->handleGroups($callback['groups'] ?? [], $user);
@@ -100,6 +109,7 @@ class OAuthController extends Controller
             );
 
             OAuthTokenUpdated::dispatch($user, $oauthData, $callback['groups'] ?? []);
+            app(TokenRenewalService::class)->rememberExpiry($accessToken->getExpires());
             Session::remove('oauth2-state');
             Session::remove('oauth2-pkceCode');
 
@@ -117,65 +127,15 @@ class OAuthController extends Controller
             $loginRouteName = config('oauth.login_route_name');
 
             return Redirect::route($loginRouteName)
-                ->with(['message' => 'Authentication failed. Please try again.']);
+                ->with(['message' => __('oauth::translations.authentication-failed')]);
         }
     }
 
+    /**
+     * @deprecated Use {@see TokenRenewalService::renew()} instead. Kept for backward compatibility.
+     */
     public function renew(): ?RedirectResponse
     {
-        /** @var string $guardName */
-        $guardName = config('oauth.guard_name');
-
-        if (Auth::guard($guardName)->check()) {
-            $user      = Auth::guard($guardName)->user();
-            $oauthData = OAuth::whereUserId($user?->getAuthIdentifier())->first();
-
-            // @phpstan-ignore-next-line
-            if ($oauthData !== null && $oauthData->oauth_token !== null && $oauthData->oauth_token_expires_at < now()->timestamp) {
-                if (config('oauth.offline_access') === false) {
-                    return $this->unauthorizeAndLogout($oauthData, $guardName);
-                }
-
-                try {
-                    /** @var AccessToken $accessToken */
-                    $accessToken = $this->provider->getAccessToken('refresh_token', [
-                        'refresh_token' => $oauthData->oauth_refresh_token, // @phpstan-ignore-line
-                    ]);
-
-                    $resourceOwner = $this->provider->getResourceOwner($accessToken);
-                    $callback      = $resourceOwner->toArray();
-                } catch (IdentityProviderException|ClientException) {
-                    return $this->unauthorizeAndLogout($oauthData, $guardName);
-                }
-
-                $oauthData->update([
-                    'oauth_token'            => $accessToken->getToken(),
-                    'oauth_refresh_token'    => $accessToken->getRefreshToken(),
-                    'oauth_token_expires_at' => $accessToken->getExpires(),
-                ]);
-
-                /** @var Model $user */
-                OAuthTokenUpdated::dispatch($user, $oauthData, $callback['groups'] ?? []);
-            }
-        }
-
-        return null;
-    }
-
-    protected function unauthorizeAndLogout(OAuth $oauthData, string $guardName): RedirectResponse
-    {
-        $oauthData->update([
-            'oauth_token'            => null,
-            'oauth_refresh_token'    => null,
-            'oauth_token_expires_at' => null,
-        ]);
-
-        Auth::guard($guardName)->logout();
-
-        /** @var string $loginRouteName */
-        $loginRouteName = config('oauth.login_route_name');
-
-        return Redirect::route($loginRouteName)
-            ->with(['message' => 'Your session has expired. Please log in again.']);
+        return app(TokenRenewalService::class)->renew();
     }
 }
