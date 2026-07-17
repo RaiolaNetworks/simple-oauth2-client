@@ -25,6 +25,14 @@ use Raiolanetworks\OAuth\Events\OAuthTokenUpdated;
 
 No database migration or token re-encryption is required for the v2 → v3 upgrade.
 
+> **Upgrading directly from v1.x?** The two steps above are not enough on their own. You must **also complete every step in the "Upgrading from v1.x to v2.x" section below** — in particular the database migration and token encryption. Skipping the v2 release does **not** skip its schema changes: without them the first login after the upgrade fails with an error such as:
+>
+> ```
+> SQLSTATE[22001]: String data, right truncated: 1406 Data too long for column 'oauth_refresh_token' at row 1
+> ```
+>
+> This happens because v2 stores tokens encrypted, and encrypted values no longer fit in the original `string(255)` column.
+
 ---
 
 # Upgrading from v1.x to v2.x
@@ -89,6 +97,17 @@ The facade now resolves to `OAuthService` via the `'oauth'` container key.
 
 ## 5. Other breaking changes
 
-- **Constructor signature changed** in `OAuthController`: nullable parameters with service locator fallback have been replaced with required type-hinted dependencies. If you extended this controller, update your constructor.
+- **Constructor signature changed** in `OAuthController`: nullable parameters with service locator fallback have been replaced with required type-hinted dependencies. Resolve the controller through the service container so its dependencies are injected — do **not** instantiate it manually:
+
+  ```php
+  // Before (breaks in v3: "Too few arguments to function ...OAuthController::__construct(), 0 passed")
+  $controller = new OAuthController();
+  $controller->request();
+
+  // After — the container injects the dependencies, and request() returns the redirect, so return it
+  return app(OAuthController::class)->request();
+  ```
+
+  If you extended this controller, update your constructor accordingly.
 - **Rate limiting**: OAuth routes now include `throttle:5,1` middleware. Override the routes if you need a different limit.
 - **Default `user_model_name`**: Config default changed from `Raiolanetworks\OAuth\Tests\Models\TestUser` to `App\Models\User`. This only affects new installations.
