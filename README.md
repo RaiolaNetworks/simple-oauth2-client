@@ -49,6 +49,9 @@ When this command is executed, the user will be guided through a series of steps
 
 - **Will you use the refresh token system in your app?**: Checking 'Yes' will allow the 'offline_access' scope to be added to the provider configuration. Which will allow the use of refresh token (as long as it is enabled in your OAuth provider).
 
+### Other configuration values
+- **`preserve_intended_url`**: After a successful callback the user is sent back to the URL they were trying to reach before being asked to authenticate, so a shared deep link survives the login. When no such URL was stored, they land on `redirect_route_name_callback_ok` as usual. Set it to `false` to always end at that route.
+
 ### Creation of variables in the .env file
 - **OAuth base URL**: Enter the base URL of the OAuth provider, which will be used for authorization and authentication requests.
 
