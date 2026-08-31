@@ -113,12 +113,27 @@ class OAuthCommand extends Command
             required: true,
         );
 
+        $routePrefix = text(
+            label: 'Path prefix for the OAuth routes:',
+            placeholder: 'E.g. oauth',
+            default: 'oauth',
+        );
+
         $this->createEnvironmentVariables('OAUTH_BASE_URL', $oauthBaseUrl);
         $this->createEnvironmentVariables('OAUTH_CLIENT_ID', $oauthClientID);
         $this->createEnvironmentVariables('OAUTH_CLIENT_SECRET', $oauthClientSecret);
         $this->createEnvironmentVariables('OAUTH_ADMIN_GROUP', $oauthAdminGroup);
-        $this->createEnvironmentVariables('OAUTH_CALLBACK_URI', '/oauth/callback');
+        $this->createEnvironmentVariables('OAUTH_ROUTE_PREFIX', $routePrefix);
         $this->createEnvironmentVariables('OAUTH_MODE', $oauthMode);
+
+        /** @var string $appUrl */
+        $appUrl = config('app.url');
+
+        info(sprintf(
+            'Register this redirect URI in your OAuth provider: %s/%s/callback',
+            rtrim($appUrl, '/'),
+            trim($routePrefix, '/'),
+        ));
     }
 
     protected function createEnvironmentVariables(string $key, string|int $value): void

@@ -22,6 +22,7 @@ it('run the install command', function () {
         ->expectsQuestion('Oauth client secret key:', 'SECRETKEY')
         ->expectsQuestion('Oauth name admin group:', 'admin_group')
         ->expectsQuestion('OAuth mode. Options: login only with username and password, only with OAuth or both:', 'BOTH')
+        ->expectsQuestion('Path prefix for the OAuth routes:', 'oauth')
         ->assertExitCode(Command::SUCCESS);
 
     unlink($tempFilePath);
