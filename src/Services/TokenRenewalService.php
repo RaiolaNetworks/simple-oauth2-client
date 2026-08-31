@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Raiolanetworks\OAuth\Services;
 
+use BadMethodCallException;
 use GuzzleHttp\Exception\ClientException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\RedirectResponse;
@@ -29,6 +30,12 @@ class TokenRenewalService
      */
     public const EXPIRY_SESSION_KEY = 'oauth2-token-expires-at';
 
+    /**
+     * Safety margin applied to every expiry check, so a token that would expire
+     * mid-request is renewed beforehand instead of being rejected by the provider.
+     */
+    public const EXPIRY_MARGIN_SECONDS = 60;
+
     public function __construct(
         protected OAuthService $provider,
     ) {}
@@ -52,40 +59,43 @@ class TokenRenewalService
         // avoid touching the database entirely.
         $cachedExpiry = Session::get(self::EXPIRY_SESSION_KEY);
 
-        if (is_int($cachedExpiry) && $cachedExpiry >= now()->timestamp) {
+        $renewalThreshold = now()->addSeconds(self::EXPIRY_MARGIN_SECONDS)->timestamp;
+
+        if (is_int($cachedExpiry) && $cachedExpiry >= $renewalThreshold) {
             return null;
         }
 
         $user      = Auth::guard($guardName)->user();
         $oauthData = OAuth::whereUserId($user?->getAuthIdentifier())->first();
 
-        // @phpstan-ignore-next-line
-        if ($oauthData === null || $oauthData->oauth_token === null || $oauthData->oauth_token_expires_at >= now()->timestamp) {
+        if ($oauthData === null || $oauthData->oauth_token === null || $oauthData->oauth_token_expires_at >= $renewalThreshold) {
             // Nothing to renew: refresh the cache so future requests short-circuit.
-            $this->rememberExpiry($oauthData?->oauth_token_expires_at); // @phpstan-ignore-line
+            $this->rememberExpiry($oauthData?->oauth_token_expires_at);
 
             return null;
         }
 
-        if (config('oauth.offline_access') === false) {
+        if (config('oauth.offline_access') === false || blank($oauthData->oauth_refresh_token)) {
             return $this->unauthorizeAndLogout($oauthData, $guardName);
         }
 
         try {
             /** @var AccessToken $accessToken */
             $accessToken = $this->provider->getAccessToken('refresh_token', [
-                'refresh_token' => $oauthData->oauth_refresh_token, // @phpstan-ignore-line
+                'refresh_token' => $oauthData->oauth_refresh_token,
             ]);
 
             $resourceOwner = $this->provider->getResourceOwner($accessToken);
             $callback      = $resourceOwner->toArray();
-        } catch (IdentityProviderException|ClientException) {
+        } catch (IdentityProviderException|ClientException|BadMethodCallException) {
             return $this->unauthorizeAndLogout($oauthData, $guardName);
         }
 
+        // A provider only has to return a refresh token when it issues a new one
+        // (RFC 6749 §5.1), so an absent value means the stored one is still valid.
         $oauthData->update([
             'oauth_token'            => $accessToken->getToken(),
-            'oauth_refresh_token'    => $accessToken->getRefreshToken(),
+            'oauth_refresh_token'    => $accessToken->getRefreshToken() ?? $oauthData->oauth_refresh_token,
             'oauth_token_expires_at' => $accessToken->getExpires(),
         ]);
 

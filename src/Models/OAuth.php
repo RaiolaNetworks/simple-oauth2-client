@@ -10,6 +10,13 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Raiolanetworks\OAuth\Database\Factories\OAuthFactory;
 
+/**
+ * @property int         $user_id
+ * @property string      $oauth_id
+ * @property string|null $oauth_token
+ * @property string|null $oauth_refresh_token
+ * @property int|null    $oauth_token_expires_at
+ */
 class OAuth extends Model
 {
     /** @use HasFactory<OAuthFactory> */
@@ -44,7 +51,9 @@ class OAuth extends Model
         ];
     }
 
-    // @phpstan-ignore-next-line
+    /**
+     * @return BelongsTo<Model, $this>
+     */
     public function user(): BelongsTo
     {
         /** @var class-string<Model> $model */
