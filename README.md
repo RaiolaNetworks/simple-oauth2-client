@@ -60,7 +60,7 @@ When this command is executed, the user will be guided through a series of steps
 
 - **OAuth mode**: Select the mode of operation of the OAuth system, which will allow 3 modes: “OAUTH”, “PASSWORD” or “BOTH”.
 
-- **OAuth route prefix**: Path prefix for the package routes, `oauth` by default, which serves them at `/oauth/request` and `/oauth/callback`. Set `OAUTH_ROUTE_PREFIX` to serve them elsewhere, for example `auth`. The redirect URI announced to the provider is built from the callback route, so it follows the prefix and the two can never disagree. Register that URI in your provider.
+- **OAuth route prefix**: Path prefix for the package routes, `oauth` by default, which serves them at `/oauth/request` and `/oauth/callback`. Set `OAUTH_ROUTE_PREFIX` to serve them elsewhere, for example `auth`. The redirect URI announced to the provider is `APP_URL` plus the callback route path, so it follows the prefix and the two can never disagree. Register that URI in your provider. It is rooted in `APP_URL` on purpose, never in the incoming request, so a reverse proxy terminating TLS, a spoofed `Host` header or serving the app under several hostnames cannot change what the provider is asked to match.
 
   `OAUTH_CALLBACK_URI` is deprecated and no longer read. It used to build the redirect URI while the route itself was fixed at `/oauth/callback`, so any other value produced a 404 after authenticating.
 
