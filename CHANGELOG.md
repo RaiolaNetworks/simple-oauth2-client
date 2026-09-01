@@ -2,6 +2,21 @@
 
 All notable changes to `oauth` will be documented in this file.
 
+## v3.2.0 - 2026-09-01
+
+### ➕ Added
+- `route_prefix` (`OAUTH_ROUTE_PREFIX`, `oauth` by default) sets the path prefix for the package routes, so the callback can be served at `/auth/callback` instead of `/oauth/callback`. The route names stay `oauth.request` and `oauth.callback`, so `route()` calls in your application keep working. `oauth:install` now asks for the prefix and prints the redirect URI to register in your provider.
+- `preserve_intended_url` (`true` by default) sends the user back to the URL they were trying to reach before being asked to authenticate, so a shared deep link survives the login. With no stored URL they land on `redirect_route_name_callback_ok` as before. Set it to `false` to always end at that route.
+
+### 🐛 Fixed
+- The redirect URI announced to the provider is now `APP_URL` plus the callback route path. It used to concatenate `APP_URL` with `OAUTH_CALLBACK_URI`, a separate setting that defaulted to an empty string and was decoupled from the route: publishing the config without running `oauth:install` advertised the bare domain, and any value other than `/oauth/callback` produced a 404 *after* the user had already authenticated. Deriving the path from the route means the two can no longer disagree.
+- The redirect URI is rooted in `APP_URL`, never in the incoming request. Building it from the request would advertise `http://` behind a reverse proxy terminating TLS (`TrustProxies` is not enabled by default in Laravel 11+), follow a spoofed `Host` header, and ignore `APP_URL` entirely on a local server — each of them a URI the provider has not registered, which fails the login.
+
+### ⚠️ Deprecated
+- `OAUTH_CALLBACK_URI` (`oauth.callback`) is no longer read. The key stays in the config file so already published configs keep working, but it has no effect. Use `OAUTH_ROUTE_PREFIX` to move the callback.
+
+  **Migration:** only one setup needs action — an application that declared its own routes against `OAuthController` to serve the callback elsewhere and set `OAUTH_CALLBACK_URI` to match. The advertised URI now follows the package route, so either set `OAUTH_ROUTE_PREFIX` to that same prefix or register the new URI in your provider.
+
 ## v3.1.1 - 2026-08-31
 
 ### 🐛 Fixed
