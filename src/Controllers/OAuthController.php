@@ -121,7 +121,11 @@ class OAuthController extends Controller
             /** @var string $redirectRouteCallbackOk */
             $redirectRouteCallbackOk = config('oauth.redirect_route_name_callback_ok');
 
-            return redirect()->route($redirectRouteCallbackOk);
+            if (config('oauth.preserve_intended_url') === false) {
+                return redirect()->route($redirectRouteCallbackOk);
+            }
+
+            return Redirect::intended(route($redirectRouteCallbackOk));
         } catch (IdentityProviderException|ClientException) {
             /** @var string $loginRouteName */
             $loginRouteName = config('oauth.login_route_name');

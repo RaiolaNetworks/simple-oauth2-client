@@ -332,3 +332,75 @@ it('logs out the user if offline_access is false during token renewal', function
 
     Mockery::close();
 });
+
+/**
+ * Sets up a callback that authenticates successfully.
+ */
+function arrangeSuccessfulCallback(string $stateCode, string $pkceCode, string $validCode): void
+{
+    Session::put('oauth2-state', $stateCode);
+    Session::put('oauth2-pkceCode', $pkceCode);
+
+    Config::set('oauth.user_model_name', TestUser::class);
+
+    $mockAccessToken = Mockery::mock(AccessToken::class);
+    $mockAccessToken->shouldReceive('getToken')->andReturn('mock_token');
+    $mockAccessToken->shouldReceive('getRefreshToken')->andReturn('mock_refresh_token');
+    $mockAccessToken->shouldReceive('getExpires')->andReturn(time() + 3600);
+
+    $mockOAuthService = Mockery::mock(OAuthService::class);
+    $mockOAuthService->shouldReceive('setPkceCode')->with($pkceCode)->once();
+    $mockOAuthService->shouldReceive('getAccessToken')
+        ->with('authorization_code', ['code' => $validCode])
+        ->andReturn($mockAccessToken);
+    $mockOAuthService->shouldReceive('getResourceOwner')
+        ->andReturn(Mockery::mock(['toArray' => ['sub' => '123456abc', 'groups' => ['admin']]]));
+
+    $mockOAuthUserHandlerInterface = Mockery::mock(OAuthUserHandlerInterface::class);
+    $mockOAuthUserHandlerInterface->shouldReceive('handleUser')->andReturn(TestUser::factory()->create());
+
+    $mockOAuthGroupHandlerInterface = Mockery::mock(OAuthGroupHandlerInterface::class);
+    $mockOAuthGroupHandlerInterface->shouldReceive('handleGroups')->andReturn();
+
+    instance(OAuthService::class, $mockOAuthService);
+    instance(OAuthUserHandlerInterface::class, $mockOAuthUserHandlerInterface);
+    instance(OAuthGroupHandlerInterface::class, $mockOAuthGroupHandlerInterface);
+
+    Auth::shouldReceive('guard')
+        ->andReturn(Mockery::mock(Guard::class, ['login' => null, 'check' => false]));
+    Auth::shouldReceive('userResolver')->andReturn(fn () => null);
+}
+
+/** @var TestCase $this */
+it('sends the user to the url they were trying to reach before authenticating', function () {
+    arrangeSuccessfulCallback('valid_state', 'valid_pkce_code', 'valid_code');
+
+    Session::put('url.intended', url('/deep/link'));
+
+    $response = get(route('oauth.callback', [
+        'code'  => 'valid_code',
+        'state' => 'valid_state',
+    ]));
+
+    expect($response->headers->get('Location'))->toBe(url('/deep/link'));
+
+    Mockery::close();
+});
+
+/** @var TestCase $this */
+it('ignores the intended url when preserve_intended_url is disabled', function () {
+    Config::set('oauth.preserve_intended_url', false);
+
+    arrangeSuccessfulCallback('valid_state', 'valid_pkce_code', 'valid_code');
+
+    Session::put('url.intended', url('/deep/link'));
+
+    $response = get(route('oauth.callback', [
+        'code'  => 'valid_code',
+        'state' => 'valid_state',
+    ]));
+
+    expect($response->headers->get('Location'))->toBe(route(config('oauth.redirect_route_name_callback_ok')));
+
+    Mockery::close();
+});

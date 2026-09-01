@@ -46,6 +46,15 @@ return [
     'redirect_route_name_callback_ok' => 'home',
 
     /**
+     * Send the user back to the URL they were trying to reach before being
+     * asked to authenticate, when one was stored.
+     *
+     * With false, a successful callback always ends at
+     * redirect_route_name_callback_ok.
+     */
+    'preserve_intended_url'           => true,
+
+    /**
      * Handler classes configuration
      *
      * Here the classes in charge of managing the handler classes of your
