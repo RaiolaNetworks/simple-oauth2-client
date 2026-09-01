@@ -9,7 +9,8 @@ return [
      * base_url:        URL of the chosen system for login via OAuth
      * client_id:       Client ID of the OAuth system
      * client_secret:   Client secret key of the OAuth system
-     * callback:        Route of the project receiving the callback
+     * callback:        Deprecated and unused. The redirect URI is derived from the
+     *                  "oauth.callback" route, so use route_prefix to move it.
      * admin_group:     Name of administration group in the OAuth system
      * mode:            Preferred login mode in your project. Allow 3 types:
      *  PASSWORD -> Show login with username and password
@@ -22,6 +23,14 @@ return [
     'callback'                        => env('OAUTH_CALLBACK_URI', ''),
     'admin_group'                     => env('OAUTH_ADMIN_GROUP', ''),
     'mode'                            => env('OAUTH_MODE', 'OAUTH'),
+
+    /**
+     * Path prefix for the package routes, "oauth.request" and "oauth.callback".
+     *
+     * The redirect URI announced to the provider is built from the callback
+     * route, so changing this moves both the route and the redirect URI.
+     */
+    'route_prefix'                    => env('OAUTH_ROUTE_PREFIX', 'oauth'),
 
     /**
      * Integration configuration variables.

@@ -26,13 +26,13 @@ class OAuthService extends GenericProvider
         /** @var string $appUrl */
         $appUrl = config('app.url');
 
-        /** @var string $callback */
-        $callback = config('oauth.callback');
-
         $options = array_merge($options, [
             'clientId'                => config('oauth.client_id'),
             'clientSecret'            => config('oauth.client_secret'),
-            'redirectUri'             => $appUrl . $callback,
+            // Rooted in app.url on purpose: route() would build the URI from the
+            // incoming request, so a proxy terminating TLS or a spoofed Host header
+            // would advertise a redirect URI the provider has not registered.
+            'redirectUri'             => rtrim($appUrl, '/') . route('oauth.callback', [], false),
             'urlAuthorize'            => $baseUrl . '/application/o/authorize/',
             'urlAccessToken'          => $baseUrl . '/application/o/token/',
             'urlResourceOwnerDetails' => $baseUrl . '/application/o/userinfo/',
