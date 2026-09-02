@@ -17,6 +17,7 @@ class TestUser extends Model implements Authenticatable
     protected $fillable = [
         'email',
         'name',
+        'password',
     ];
 
     protected static function newFactory(): Factory
