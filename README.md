@@ -99,26 +99,48 @@ php artisan vendor:publish --tag="oauth-translations"
 ## Implementing the Package in the Project
 
 
-Before starting to develop the workflow, it is recommended to understand how the package works when creating or modifying users and groups.
+Before developing your workflow, it is worth understanding how the package creates and updates users and groups, because that is the part you are most likely to replace.
 
-To achieve this, two interfaces have been created: [OAuthUserHandlerInterface](src/Contracts/OAuthUserHandlerInterface.php) and [OAuthGroupHandlerInterface](src/Contracts/OAuthGroupHandlerInterface.php). These interfaces can be implemented in the user model of your application, allowing you to override the `handleUser()` and `handleGroup()` methods, respectively.
-
-There are also two predefined classes: [BaseOAuthUserHandler](src/Handlers/BaseOAuthUserHandler.php) and [BaseOAuthGroupHandler](src/Handlers/BaseOAuthGroupHandler.php), which implement these interfaces with default logic. These will serve as an example for the developer and will also help, if it is a simple application, for the package to work without having to overwrite anything.
-
-**IMPORTANT**
-
-It is likely necessary to implement these interfaces to override the logic for handling the users and groups returned by the OAuth service.
-
-However, **do not forget** to override the `user_handler` and `group_handler` variables in the [configuration file](config/oauth.php), specifying which model will override the interface methods.
+Two contracts drive it: [OAuthUserHandlerInterface](src/Contracts/OAuthUserHandlerInterface.php), with a `handleUser()` method, and [OAuthGroupHandlerInterface](src/Contracts/OAuthGroupHandlerInterface.php), with a `handleGroups()` method. Point the `user_handler` and `group_handler` keys of the [configuration file](config/oauth.php) at the classes that implement them:
 
 ```php
 return [
     ...
 
-    'user_handler'  => App\Models\User::class,
-    'group_handler' => App\Models\User::class,
+    'user_handler'  => App\OAuth\UserHandler::class,
+    'group_handler' => App\OAuth\GroupHandler::class,
 ];
 ```
+
+Any class the container can build will do, and a dedicated class per handler is the easiest thing to read and to test. Implementing the contracts on your `User` model also works, and earlier versions of this README suggested it, but it puts authentication logic on the model that logic is about.
+
+### Do you need to write your own?
+
+**`handleGroups()`: yes, if groups matter to you.** [BaseOAuthGroupHandler](src/Handlers/BaseOAuthGroupHandler.php) does nothing at all. It exists so the package runs before you have decided how the provider's groups map onto your roles or permissions.
+
+**`handleUser()`: expect to, eventually.** [BaseOAuthUserHandler](src/Handlers/BaseOAuthUserHandler.php) is deliberately minimal. It exists so that a fresh install can log in before you have written anything, and it knows only the columns Laravel's own `users` table ships with (`name`, `email`, `password`). It is a starting point, not something to ship on: write your own as soon as you have columns of your own to fill, a different rule for matching accounts, or anything at all to do beyond creating the user.
+
+### What the default handler does
+
+Four things, and it fits on a screen — read [the class](src/Handlers/BaseOAuthUserHandler.php) rather than trusting this list:
+
+- **Matches the account by email address**, with `firstOrNew`, creating one when there is none.
+- **Gives new users a random password** they cannot authenticate with, because Laravel's `users` table declares the column `NOT NULL` and the first login would otherwise die on it. Written on creation only. Projects that dropped the column are left alone.
+- **Sets `name`** from the `name` claim, falling back to the email address when the provider sends none.
+- **Raises `IdentityProviderException`** when the provider sends no email address at all. The controller already catches it, so the user is returned to your login route with a message instead of meeting a 500.
+
+That is the whole of it. It does not read `email_verified`, never touches `email_verified_at`, and matches on the email address rather than on `sub` — all decisions it leaves to you, for the reasons below.
+
+### Writing your own: what the contract expects
+
+`handleUser()` receives the provider's claims and the access token, and has to return the Eloquent model for the authenticated user. Four things are worth knowing before you write one, because getting them wrong is easy and the consequences are quiet:
+
+1. **Return a saved model.** The controller reads its primary key straight afterwards to link the `oauth` row, so an unsaved instance will not do.
+2. **If your `users` table requires a password, set one on creation only.** Writing a password on every login leaves every account in your application sharing the same value, and if a password login form is reachable anywhere, that value is a key to all of them. `Str::random()` per user, never a literal.
+3. **Choose deliberately what you match accounts on.** The email address is convenient, but your provider controls it, so matching on it means any identity that can present a given address inherits the local account carrying it, including accounts created before you adopted OAuth. It has a quieter cost too: the controller links the identity with `OAuth::updateOrCreate()` keyed on the pair `user_id` + `oauth_id`, so when the provider changes someone's address, the next login creates a second user **and** a second `oauth` row instead of updating the ones already there. Matching on `sub` through the `oauth` table avoids both, at the cost of needing a rule for what to do on the first login, when no link exists yet.
+4. **Do not assume the claims are there.** `email`, `name` and `groups` all depend on granted scopes and on the provider's claim mapping. Throwing `IdentityProviderException` gets you a graceful redirect to your login route; anything else surfaces as a 500.
+
+The same applies to `handleGroups()`, which receives the provider's group list and the user, and returns nothing. It runs on every login, so it is the right place to revoke a role as well as to grant one.
 
 ---
 
