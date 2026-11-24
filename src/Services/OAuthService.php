@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Raiolanetworks\OAuth\Services;
 
 use League\OAuth2\Client\Provider\GenericProvider;
+use Raiolanetworks\OAuth\Enums\GroupSourceEnum;
 
 class OAuthService extends GenericProvider
 {
@@ -18,6 +19,12 @@ class OAuthService extends GenericProvider
 
         if (config('oauth.offline_access') === true) {
             $scopes .= ' offline_access';
+        }
+
+        $groupSourceScope = GroupSourceEnum::fromConfig()->scope();
+
+        if ($groupSourceScope !== null) {
+            $scopes .= ' ' . $groupSourceScope;
         }
 
         /** @var string $baseUrl */

@@ -20,6 +20,7 @@ it('run the install command', function () {
         ->expectsQuestion('Oauth base url:', 'https://asgard.your.company')
         ->expectsQuestion('Oauth client ID:', 'CLIENTID')
         ->expectsQuestion('Oauth client secret key:', 'SECRETKEY')
+        ->expectsQuestion('Source of the groups handed to the group handler: directory groups or application entitlements:', 'groups')
         ->expectsQuestion('Oauth name admin group:', 'admin_group')
         ->expectsQuestion('OAuth mode. Options: login only with username and password, only with OAuth or both:', 'BOTH')
         ->expectsQuestion('Path prefix for the OAuth routes:', 'oauth')

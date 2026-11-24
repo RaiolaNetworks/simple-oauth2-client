@@ -11,7 +11,13 @@ return [
      * client_secret:   Client secret key of the OAuth system
      * callback:        Deprecated and unused. The redirect URI is derived from the
      *                  "oauth.callback" route, so use route_prefix to move it.
-     * admin_group:     Name of administration group in the OAuth system
+     * admin_group:     Name of the group (or entitlement, see group_source)
+     *                  that grants administration
+     * group_source:    Claim handed to the group handler. Allow 2 types:
+     *  groups -> Directory groups of the user (default)
+     *  entitlements -> Application entitlements of the user (authentik 2024.12+).
+     *                  Requests the "entitlements" scope and ignores the
+     *                  directory groups entirely, they are never merged.
      * mode:            Preferred login mode in your project. Allow 3 types:
      *  PASSWORD -> Show login with username and password
      *  OAUTH -> Show login with oauth
@@ -22,6 +28,7 @@ return [
     'client_secret'                   => env('OAUTH_CLIENT_SECRET', ''),
     'callback'                        => env('OAUTH_CALLBACK_URI', ''),
     'admin_group'                     => env('OAUTH_ADMIN_GROUP', ''),
+    'group_source'                    => env('OAUTH_GROUP_SOURCE', 'groups'),
     'mode'                            => env('OAUTH_MODE', 'OAUTH'),
 
     /**

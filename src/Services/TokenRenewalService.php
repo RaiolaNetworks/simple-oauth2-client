@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Facades\Session;
 use League\OAuth2\Client\Provider\Exception\IdentityProviderException;
 use League\OAuth2\Client\Token\AccessToken;
+use Raiolanetworks\OAuth\Enums\GroupSourceEnum;
 use Raiolanetworks\OAuth\Events\OAuthTokenUpdated;
 use Raiolanetworks\OAuth\Models\OAuth;
 
@@ -102,7 +103,7 @@ class TokenRenewalService
         $this->rememberExpiry($accessToken->getExpires());
 
         /** @var Model $user */
-        OAuthTokenUpdated::dispatch($user, $oauthData, $callback['groups'] ?? []);
+        OAuthTokenUpdated::dispatch($user, $oauthData, GroupSourceEnum::fromConfig()->extract($callback));
 
         return null;
     }

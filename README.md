@@ -59,7 +59,9 @@ When this command is executed, the user will be guided through a series of steps
 
 - **OAuth client secret key**: Enter the secret key associated with the OAuth client, which is used to validate the authentication between the client and the OAuth server.
 
-- **OAuth admin group name**: Specify the name of the user group with administrative privileges that will be managed within the OAuth system.
+- **Group source**: Which claim is handed to your group handler, `groups` (default) or `entitlements`. See [Groups or application entitlements](#groups-or-application-entitlements).
+
+- **OAuth admin group name**: Specify the name of the user group with administrative privileges that will be managed within the OAuth system. With `OAUTH_GROUP_SOURCE=entitlements`, put the name of the admin entitlement here instead.
 
 - **OAuth mode**: Select the mode of operation of the OAuth system, which will allow 3 modes: “OAUTH”, “PASSWORD” or “BOTH”.
 
@@ -183,6 +185,31 @@ This will complete the integration of the OAuth package into your project, allow
 ### Other features
 
 This section talks about certain functions of the package, which are good to know.
+
+#### Groups or application entitlements
+
+The group handler (`handleGroups()`) and the `OAuthTokenUpdated` event receive the names from one claim of the user, chosen with `OAUTH_GROUP_SOURCE` (`oauth.group_source`):
+
+| Value | Claim | What it holds |
+|---|---|---|
+| `groups` (default) | `groups` | Directory groups of the user, shared by every application. Sent with the `profile` scope. |
+| `entitlements` | `entitlements` | [Application entitlements](https://docs.goauthentik.io/add-secure-apps/applications/manage_apps) of the user, scoped to this application only. The package also requests the `entitlements` scope. |
+
+Entitlements are an authentik feature (2024.12+), not part of standard OIDC. They let each application own its roles, so a directory group grants nothing in an application unless you bind it to one of its entitlements.
+
+The two sources are never merged. In `entitlements` mode the directory groups are ignored entirely, so a group named like one of your entitlements cannot grant it, and a missing `entitlements` claim gives the handler an empty list, never the groups. An unknown value throws `InvalidArgumentException` rather than falling back to `groups`. The handler contract does not change: in `entitlements` mode, the `$groups` argument holds entitlement names.
+
+To use entitlements in authentik:
+
+1. Open the application, go to the **Application entitlements** tab and create the entitlements (for example `app-admin`). Bind each one to the users or groups that should have it.
+2. Edit the OAuth2 provider and, under **Advanced protocol settings** > **Selected Scopes**, add `authentik default OAuth Mapping: Application Entitlements`. The provider only returns the claim when that mapping is selected **and** the client requests the scope. If either is missing, the claim is silently absent and every user ends up with no entitlements.
+3. Set `OAUTH_GROUP_SOURCE=entitlements` and, if your handler uses it, `OAUTH_ADMIN_GROUP` to the admin entitlement name.
+
+An already published `config/oauth.php` without the `group_source` key still honours `OAUTH_GROUP_SOURCE`, because the package config is merged underneath it.
+
+**Switching an existing app to `entitlements`:** a refresh grant keeps the scopes of the original login, so users who were already logged in get no `entitlements` claim on renewal, and `OAuthTokenUpdated` carries an empty list until they log in again. If a listener of that event syncs or revokes roles, it would strip them in the meantime. Either make it only grant, or force a new login after switching.
+
+The same mapping currently also sends a `roles` claim with the same names. The package reads `entitlements`.
 
 #### Renew tokens
 

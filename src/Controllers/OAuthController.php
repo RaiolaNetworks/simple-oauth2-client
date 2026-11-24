@@ -18,6 +18,7 @@ use League\OAuth2\Client\Provider\Exception\IdentityProviderException;
 use League\OAuth2\Client\Token\AccessToken;
 use Raiolanetworks\OAuth\Contracts\OAuthGroupHandlerInterface;
 use Raiolanetworks\OAuth\Contracts\OAuthUserHandlerInterface;
+use Raiolanetworks\OAuth\Enums\GroupSourceEnum;
 use Raiolanetworks\OAuth\Events\OAuthTokenUpdated;
 use Raiolanetworks\OAuth\Models\OAuth;
 use Raiolanetworks\OAuth\Services\OAuthService;
@@ -93,8 +94,10 @@ class OAuthController extends Controller
                 throw new IdentityProviderException('Missing resource owner identifier', 0, 'Missing resource owner identifier');
             }
 
+            $groups = GroupSourceEnum::fromConfig()->extract($callback);
+
             $user = $this->userHandler->handleUser($callback, $accessToken);
-            $this->groupHandler->handleGroups($callback['groups'] ?? [], $user);
+            $this->groupHandler->handleGroups($groups, $user);
 
             $oauthData = OAuth::updateOrCreate(
                 [
@@ -108,7 +111,7 @@ class OAuthController extends Controller
                 ]
             );
 
-            OAuthTokenUpdated::dispatch($user, $oauthData, $callback['groups'] ?? []);
+            OAuthTokenUpdated::dispatch($user, $oauthData, $groups);
             app(TokenRenewalService::class)->rememberExpiry($accessToken->getExpires());
             Session::remove('oauth2-state');
             Session::remove('oauth2-pkceCode');
