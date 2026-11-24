@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Raiolanetworks\OAuth\Services;
 
 use BadMethodCallException;
-use GuzzleHttp\Exception\ClientException;
+use GuzzleHttp\Exception\GuzzleException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
@@ -15,6 +15,7 @@ use League\OAuth2\Client\Provider\Exception\IdentityProviderException;
 use League\OAuth2\Client\Token\AccessToken;
 use Raiolanetworks\OAuth\Events\OAuthTokenUpdated;
 use Raiolanetworks\OAuth\Models\OAuth;
+use UnexpectedValueException;
 
 /**
  * Handles OAuth access-token renewal.
@@ -87,7 +88,9 @@ class TokenRenewalService
 
             $resourceOwner = $this->provider->getResourceOwner($accessToken);
             $callback      = $resourceOwner->toArray();
-        } catch (IdentityProviderException|ClientException|BadMethodCallException) {
+        } catch (IdentityProviderException|GuzzleException|UnexpectedValueException|BadMethodCallException) {
+            // Fail closed: when the token cannot be renewed, for whatever reason,
+            // the session ends instead of answering 500 on every request.
             return $this->unauthorizeAndLogout($oauthData, $guardName);
         }
 
@@ -133,6 +136,11 @@ class TokenRenewalService
         Session::forget(self::EXPIRY_SESSION_KEY);
 
         Auth::guard($guardName)->logout();
+
+        // Drop everything the session held for that user and issue a new CSRF
+        // token, as a regular logout does.
+        Session::invalidate();
+        Session::regenerateToken();
 
         /** @var string $loginRouteName */
         $loginRouteName = config('oauth.login_route_name');

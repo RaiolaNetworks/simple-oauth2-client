@@ -33,6 +33,15 @@ return [
     'route_prefix'                    => env('OAUTH_ROUTE_PREFIX', 'oauth'),
 
     /**
+     * Rate limit for the package routes, as "attempts,minutes" for Laravel's
+     * throttle middleware. Empty disables it.
+     *
+     * Counted per IP (or per user once logged in) and shared by both routes,
+     * so each login uses two attempts. Users behind one NAT share the limit.
+     */
+    'throttle'                        => env('OAUTH_THROTTLE', '20,1'),
+
+    /**
      * Integration configuration variables.
      *
      * user_model_name:                  Model name in your project of the Authenticatable users (default: \App\Models\User)

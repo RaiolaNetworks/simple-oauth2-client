@@ -10,7 +10,16 @@ use Raiolanetworks\OAuth\Controllers\OAuthController;
 /** @var string $prefix */
 $prefix = config('oauth.route_prefix') ?? 'oauth';
 
-Route::middleware(['web', 'throttle:5,1'])->prefix($prefix)->group(function () {
+/** @var string|null $throttle */
+$throttle = config('oauth.throttle', '20,1');
+
+$middleware = ['web'];
+
+if (is_string($throttle) && $throttle !== '') {
+    $middleware[] = 'throttle:' . $throttle;
+}
+
+Route::middleware($middleware)->prefix($prefix)->group(function () {
     Route::get('/request', [OAuthController::class, 'request'])->name('oauth.request');
     Route::get('/callback', [OAuthController::class, 'callback'])->name('oauth.callback');
 });
