@@ -20,6 +20,11 @@ use Raiolanetworks\OAuth\Models\OAuth;
  * account, and only when the provider reports it as verified and that account
  * is not linked to another subject yet. Anything else would hand one person's
  * account to whoever claims their email.
+ *
+ * A subject seen for the first time with an unverified email that no account
+ * uses yet gets a new account with that email, unless require_verified_email
+ * is enabled. authentik's default email mapping always reports the email as
+ * unverified, so rejecting those would block every new user there.
  */
 class BaseOAuthUserHandler implements OAuthUserHandlerInterface
 {
@@ -38,6 +43,10 @@ class BaseOAuthUserHandler implements OAuthUserHandlerInterface
 
         if ($subject === '' || filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
             throw $this->reject('The provider did not return a valid subject and email');
+        }
+
+        if (! $verified && config('oauth.require_verified_email') === true) {
+            throw $this->reject('The provider did not verify the email');
         }
 
         $user = $this->linkedTo($subject) ?? $this->linkableByEmail($email, $subject, $verified);

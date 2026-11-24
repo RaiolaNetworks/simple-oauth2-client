@@ -111,6 +111,10 @@ There are also two predefined classes: [BaseOAuthUserHandler](src/Handlers/BaseO
 
 A verified email change in the provider is copied to the account, unless another account already uses that email. An unverified one is ignored.
 
+**authentik reports every email as unverified.** Its default `email` scope mapping always sends `email_verified: false`, because users can usually change their own email. With it, new people and already linked accounts log in normally, but an existing account that never logged in through OAuth is not linked by email: that login is rejected. To link them, send `email_verified: true` from a custom scope mapping, and only if emails in your authentik are verified or cannot be changed by users. Otherwise, link those accounts by hand by inserting their `sub` in the `oauth` table.
+
+**Accounts pre-created with someone else's email.** By default, someone logging in for the first time with an unverified email that no account uses yet gets a new account with that email. If your application also lets people recover an account by email (password reset in `BOTH` or `PASSWORD` mode), the real owner of that address could later take over that account while its creator keeps logging in to it through the provider. In that case set `require_verified_email` to `true`, so logins without a verified email are rejected, and make the provider send `email_verified: true` for verified emails.
+
 If you write your own user handler, keep the same rule: never resolve an account by email alone.
 
 **IMPORTANT**

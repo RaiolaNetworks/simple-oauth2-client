@@ -102,3 +102,23 @@ it('falls back to the username and then the email for the name', function () {
     expect(resolveUser(['sub' => 's1', 'email' => 'a@example.com', 'preferred_username' => 'alice'])->name)->toBe('alice')
         ->and(resolveUser(['sub' => 's2', 'email' => 'b@example.com'])->name)->toBe('b@example.com');
 });
+
+it('creates accounts with an unverified email by default', function () {
+    expect(resolveUser(['sub' => 'sub-1', 'email' => 'a@example.com', 'email_verified' => false])->exists)->toBeTrue();
+});
+
+it('rejects an unverified email when verified emails are required', function (array $claims) {
+    config()->set('oauth.require_verified_email', true);
+
+    resolveUser($claims);
+})->throws(IdentityProviderException::class)->with([
+    'explicitly unverified' => [['sub' => 'sub-1', 'email' => 'a@example.com', 'email_verified' => false]],
+    'claim missing'         => [['sub' => 'sub-1', 'email' => 'a@example.com']],
+    'truthy but not true'   => [['sub' => 'sub-1', 'email' => 'a@example.com', 'email_verified' => 'true']],
+]);
+
+it('accepts a verified email when verified emails are required', function () {
+    config()->set('oauth.require_verified_email', true);
+
+    expect(resolveUser(['sub' => 'sub-1', 'email' => 'a@example.com', 'email_verified' => true])->exists)->toBeTrue();
+});
