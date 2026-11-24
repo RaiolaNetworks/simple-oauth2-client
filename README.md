@@ -190,6 +190,12 @@ For token renewal, simply set the 'offline_access' variable in [the configuratio
 
 A [middleware](src/Middleware/OAuthTokenRenewal.php) is available that calls the `renew()` function of the `OAuthController`. This function checks whether the authenticated user has an OAuth token and if the expiration time has not passed. If the token has expired, it will determine if a refresh token is being handled. It will either generate a new token or reject and unauthenticate the user's session accordingly.
 
+#### Groups on renewal
+
+With `sync_groups_on_renewal` (`true` by default), every successful renewal hands the groups returned with the new token to your group handler, the same way the login does. A group removed in the provider therefore stops applying within one access token lifetime, instead of lasting until the user logs in again. Your handler must be safe to call repeatedly with the same groups. Set it to `false` to read the groups only at login.
+
+The groups are only refreshed when a renewal happens, which needs `offline_access` and the `OAuthTokenRenewal` middleware on the routes you protect. Without them, the provider is never asked again during the session: changes to groups, and even a deactivated account, only take effect once the application session ends.
+
 ## Testing
 
 ```bash

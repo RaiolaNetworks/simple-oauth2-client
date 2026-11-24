@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Facades\Session;
 use League\OAuth2\Client\Provider\Exception\IdentityProviderException;
 use League\OAuth2\Client\Token\AccessToken;
+use Raiolanetworks\OAuth\Contracts\OAuthGroupHandlerInterface;
 use Raiolanetworks\OAuth\Events\OAuthTokenUpdated;
 use Raiolanetworks\OAuth\Models\OAuth;
 
@@ -101,8 +102,19 @@ class TokenRenewalService
 
         $this->rememberExpiry($accessToken->getExpires());
 
+        $groups = is_array($callback['groups'] ?? null)
+            ? array_values(array_filter($callback['groups'], is_string(...)))
+            : [];
+
         /** @var Model $user */
-        OAuthTokenUpdated::dispatch($user, $oauthData, $callback['groups'] ?? []);
+        // Hand the current groups to the group handler on every renewal, so a
+        // group removed in the provider stops granting access within one token
+        // lifetime instead of lasting until the next login.
+        if (config('oauth.sync_groups_on_renewal') !== false) {
+            app(OAuthGroupHandlerInterface::class)->handleGroups($groups, $user);
+        }
+
+        OAuthTokenUpdated::dispatch($user, $oauthData, $groups);
 
         return null;
     }

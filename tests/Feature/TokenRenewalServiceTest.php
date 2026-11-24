@@ -11,6 +11,7 @@ use League\OAuth2\Client\Token\AccessToken;
 
 use function Pest\Laravel\instance;
 
+use Raiolanetworks\OAuth\Contracts\OAuthGroupHandlerInterface;
 use Raiolanetworks\OAuth\Models\OAuth;
 use Raiolanetworks\OAuth\Services\OAuthService;
 use Raiolanetworks\OAuth\Services\TokenRenewalService;
@@ -214,4 +215,67 @@ it('caches the token expiry after a successful renewal', function () {
     $service->rememberExpiry($expiresAt);
 
     expect(Session::get(TokenRenewalService::EXPIRY_SESSION_KEY))->toBe($expiresAt);
+});
+
+/**
+ * Sets up an expired token that renews successfully with the given groups.
+ *
+ * @param array<array-key, mixed> $groups
+ */
+function arrangeRenewalWithGroups(TestUser $user, array $groups): void
+{
+    Config::set('oauth.offline_access', true);
+
+    OAuth::factory(state: [
+        'user_id'                => $user->id,
+        'oauth_token'            => 'some_token',
+        'oauth_refresh_token'    => 'some_refresh_token',
+        'oauth_token_expires_at' => Carbon::now()->subHour()->timestamp,
+    ])->create();
+
+    $mockAccessToken = Mockery::mock(AccessToken::class);
+    $mockAccessToken->shouldReceive('getToken')->andReturn('renewed_token');
+    $mockAccessToken->shouldReceive('getRefreshToken')->andReturn('rotated_refresh_token');
+    $mockAccessToken->shouldReceive('getExpires')->andReturn(Carbon::now()->addHour()->timestamp);
+
+    $mockOAuthService = Mockery::mock(OAuthService::class);
+    $mockOAuthService->shouldReceive('getAccessToken')->andReturn($mockAccessToken);
+    $mockOAuthService->shouldReceive('getResourceOwner')
+        ->andReturn(Mockery::mock(['toArray' => ['sub' => '123456abc', 'groups' => $groups]]));
+    instance(OAuthService::class, $mockOAuthService);
+
+    Auth::shouldReceive('guard')
+        ->with(config('oauth.guard_name'))
+        ->andReturn(Mockery::mock(Guard::class, ['check' => true, 'user' => $user]));
+}
+
+/** @var TestCase $this */
+it('hands the current groups to the group handler on renewal', function () {
+    $mockUser = TestUser::factory()->create();
+    arrangeRenewalWithGroups($mockUser, ['Staff', 7, null]);
+
+    $mockGroupHandler = Mockery::mock(OAuthGroupHandlerInterface::class);
+    $mockGroupHandler->shouldReceive('handleGroups')
+        ->once()
+        ->with(['Staff'], Mockery::on(fn ($user) => $user->is($mockUser)));
+    instance(OAuthGroupHandlerInterface::class, $mockGroupHandler);
+
+    expect($this->app->make(TokenRenewalService::class)->renew())->toBeNull();
+
+    Mockery::close();
+});
+
+/** @var TestCase $this */
+it('does not call the group handler on renewal when disabled', function () {
+    $mockUser = TestUser::factory()->create();
+    arrangeRenewalWithGroups($mockUser, ['Staff']);
+    Config::set('oauth.sync_groups_on_renewal', false);
+
+    $mockGroupHandler = Mockery::mock(OAuthGroupHandlerInterface::class);
+    $mockGroupHandler->shouldNotReceive('handleGroups');
+    instance(OAuthGroupHandlerInterface::class, $mockGroupHandler);
+
+    expect($this->app->make(TokenRenewalService::class)->renew())->toBeNull();
+
+    Mockery::close();
 });
