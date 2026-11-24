@@ -12,6 +12,7 @@ use function Laravel\Prompts\info;
 use function Laravel\Prompts\select;
 use function Laravel\Prompts\text;
 
+use Raiolanetworks\OAuth\Enums\GroupSourceEnum;
 use Raiolanetworks\OAuth\Enums\LoginModesEnum;
 
 class OAuthCommand extends Command
@@ -101,9 +102,15 @@ class OAuthCommand extends Command
             required: true,
         );
 
+        $groupSource = select(
+            label: 'Source of the groups handed to the group handler: directory groups or application entitlements:',
+            options: array_column(GroupSourceEnum::cases(), 'value'),
+            default: GroupSourceEnum::GROUPS->value,
+        );
+
         $oauthAdminGroup = text(
             label: 'Oauth name admin group:',
-            placeholder: 'E.g. "Admins"',
+            placeholder: $groupSource === GroupSourceEnum::ENTITLEMENTS->value ? 'E.g. "app-admin" (the admin entitlement)' : 'E.g. "Admins"',
             default: '',
         );
 
@@ -122,6 +129,7 @@ class OAuthCommand extends Command
         $this->createEnvironmentVariables('OAUTH_BASE_URL', $oauthBaseUrl);
         $this->createEnvironmentVariables('OAUTH_CLIENT_ID', $oauthClientID);
         $this->createEnvironmentVariables('OAUTH_CLIENT_SECRET', $oauthClientSecret);
+        $this->createEnvironmentVariables('OAUTH_GROUP_SOURCE', $groupSource);
         $this->createEnvironmentVariables('OAUTH_ADMIN_GROUP', $oauthAdminGroup);
         $this->createEnvironmentVariables('OAUTH_ROUTE_PREFIX', $routePrefix);
         $this->createEnvironmentVariables('OAUTH_MODE', $oauthMode);

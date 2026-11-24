@@ -20,7 +20,7 @@ class OAuthTokenUpdated
     /**
      * Create a new event instance.
      *
-     * @param array<string, mixed> $groups
+     * @param array<array-key, string> $groups names from the configured group source
      */
     public function __construct(public Model|Authenticatable $user, public OAuth $oauthData, public array $groups)
     {
