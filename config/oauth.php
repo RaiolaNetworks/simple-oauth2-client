@@ -79,4 +79,17 @@ return [
      * provider configuration.
      */
     'offline_access'                  => true,
+
+    /**
+     * Reject logins whose email the provider does not report as verified
+     * (email_verified claim), used by the default user handler.
+     *
+     * With false, a person logging in for the first time with an unverified
+     * email gets a new account with that email. If your application also
+     * lets people recover an account by email (password reset), that account
+     * could be pre-created by someone else using the victim's address: enable
+     * this, and make the provider send email_verified: true only for emails it
+     * actually verified. authentik's default email mapping always sends false.
+     */
+    'require_verified_email'          => false,
 ];

@@ -105,6 +105,18 @@ To achieve this, two interfaces have been created: [OAuthUserHandlerInterface](s
 
 There are also two predefined classes: [BaseOAuthUserHandler](src/Handlers/BaseOAuthUserHandler.php) and [BaseOAuthGroupHandler](src/Handlers/BaseOAuthGroupHandler.php), which implement these interfaces with default logic. These will serve as an example for the developer and will also help, if it is a simple application, for the package to work without having to overwrite anything.
 
+#### How the default user handler identifies people
+
+`BaseOAuthUserHandler` identifies the account by the provider subject (`sub`), which never changes, not by the email, which a person may be able to change in the provider. The email is only used the first time a subject logs in, to link it to an existing account, and only when the provider sends `email_verified: true` and that account is not linked to another subject yet. Otherwise the login is rejected rather than handing one person's account to whoever claims their email. A missing `sub` or an invalid email is rejected too.
+
+A verified email change in the provider is copied to the account, unless another account already uses that email. An unverified one is ignored.
+
+**authentik reports every email as unverified.** Its default `email` scope mapping always sends `email_verified: false`, because users can usually change their own email. With it, new people and already linked accounts log in normally, but an existing account that never logged in through OAuth is not linked by email: that login is rejected. To link them, send `email_verified: true` from a custom scope mapping, and only if emails in your authentik are verified or cannot be changed by users. Otherwise, link those accounts by hand by inserting their `sub` in the `oauth` table.
+
+**Accounts pre-created with someone else's email.** By default, someone logging in for the first time with an unverified email that no account uses yet gets a new account with that email. If your application also lets people recover an account by email (password reset in `BOTH` or `PASSWORD` mode), the real owner of that address could later take over that account while its creator keeps logging in to it through the provider. In that case set `require_verified_email` to `true`, so logins without a verified email are rejected, and make the provider send `email_verified: true` for verified emails.
+
+If you write your own user handler, keep the same rule: never resolve an account by email alone.
+
 **IMPORTANT**
 
 It is likely necessary to implement these interfaces to override the logic for handling the users and groups returned by the OAuth service.
