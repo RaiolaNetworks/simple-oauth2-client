@@ -79,4 +79,17 @@ return [
      * provider configuration.
      */
     'offline_access'                  => true,
+
+    /**
+     * Run the group handler again on every token renewal
+     *
+     * With true, the groups returned with each renewed token are handed to
+     * group_handler, so a group removed in the provider stops applying within
+     * one access token lifetime instead of lasting until the next login. Your
+     * handler must be safe to call repeatedly with the same groups.
+     *
+     * Renewal only happens with offline_access and the OAuthTokenRenewal
+     * middleware. Without them, the groups are only read at login.
+     */
+    'sync_groups_on_renewal'          => true,
 ];
