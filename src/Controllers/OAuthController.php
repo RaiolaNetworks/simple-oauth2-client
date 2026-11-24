@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Raiolanetworks\OAuth\Controllers;
 
-use GuzzleHttp\Exception\ClientException;
+use GuzzleHttp\Exception\GuzzleException;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\RedirectResponse;
@@ -23,6 +23,7 @@ use Raiolanetworks\OAuth\Models\OAuth;
 use Raiolanetworks\OAuth\Services\OAuthService;
 use Raiolanetworks\OAuth\Services\TokenRenewalService;
 use Symfony\Component\HttpFoundation\RedirectResponse as HttpFoundationRedirectResponse;
+use UnexpectedValueException;
 
 class OAuthController extends Controller
 {
@@ -63,16 +64,19 @@ class OAuthController extends Controller
         }
 
         try {
-            $code         = $request->query('code');
-            $state        = $request->query('state');
-            $sessionState = Session::get('oauth2-state');
-            $pkceCode     = Session::get('oauth2-pkceCode');
+            $code  = $request->query('code');
+            $state = $request->query('state');
 
-            if (! isset($code)) {
+            // Pulled, not read: a state and verifier are good for one attempt,
+            // whether it succeeds or not.
+            $sessionState = Session::pull('oauth2-state');
+            $pkceCode     = Session::pull('oauth2-pkceCode');
+
+            if (! is_string($code) || $code === '') {
                 throw new IdentityProviderException('Invalid code', 0, 'Invalid code');
             }
 
-            if (! isset($state) || $sessionState === null || $state !== $sessionState) {
+            if (! is_string($state) || ! is_string($sessionState) || $sessionState === '' || ! hash_equals($sessionState, $state)) {
                 throw new IdentityProviderException('Invalid state', 0, 'Invalid state');
             }
 
@@ -110,8 +114,6 @@ class OAuthController extends Controller
 
             OAuthTokenUpdated::dispatch($user, $oauthData, $callback['groups'] ?? []);
             app(TokenRenewalService::class)->rememberExpiry($accessToken->getExpires());
-            Session::remove('oauth2-state');
-            Session::remove('oauth2-pkceCode');
 
             Session::regenerate();
 
@@ -126,7 +128,9 @@ class OAuthController extends Controller
             }
 
             return Redirect::intended(route($redirectRouteCallbackOk));
-        } catch (IdentityProviderException|ClientException) {
+        } catch (IdentityProviderException|GuzzleException|UnexpectedValueException) {
+            // Any failure talking to the provider, including timeouts, 5xx and
+            // malformed responses, ends at the login page instead of a 500.
             /** @var string $loginRouteName */
             $loginRouteName = config('oauth.login_route_name');
 

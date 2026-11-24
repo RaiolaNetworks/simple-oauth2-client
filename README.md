@@ -52,6 +52,8 @@ When this command is executed, the user will be guided through a series of steps
 ### Other configuration values
 - **`preserve_intended_url`**: After a successful callback the user is sent back to the URL they were trying to reach before being asked to authenticate, so a shared deep link survives the login. When no such URL was stored, they land on `redirect_route_name_callback_ok` as usual. Set it to `false` to always end at that route.
 
+- **`throttle`** (`OAUTH_THROTTLE`, `20,1` by default): rate limit for the package routes, as `attempts,minutes` for Laravel's `throttle` middleware. It is counted per IP and shared by both routes, so each login uses two attempts, and users behind one NAT share it. Raise it if many people log in from the same network; an empty value disables it.
+
 ### Creation of variables in the .env file
 - **OAuth base URL**: Enter the base URL of the OAuth provider, which will be used for authorization and authentication requests.
 
