@@ -65,8 +65,13 @@ class TokenRenewalService
             return null;
         }
 
-        $user      = Auth::guard($guardName)->user();
-        $oauthData = OAuth::whereUserId($user?->getAuthIdentifier())->first();
+        $user = Auth::guard($guardName)->user();
+        // Most recent link first: accounts linked by email in earlier versions may
+        // hold several, and the one used at the last login is the live one.
+        $oauthData = OAuth::whereUserId($user?->getAuthIdentifier())
+            ->orderByDesc('updated_at')
+            ->orderByDesc('id')
+            ->first();
 
         if ($oauthData === null || $oauthData->oauth_token === null || $oauthData->oauth_token_expires_at >= $renewalThreshold) {
             // Nothing to renew: refresh the cache so future requests short-circuit.
@@ -88,6 +93,12 @@ class TokenRenewalService
             $resourceOwner = $this->provider->getResourceOwner($accessToken);
             $callback      = $resourceOwner->toArray();
         } catch (IdentityProviderException|ClientException|BadMethodCallException) {
+            return $this->unauthorizeAndLogout($oauthData, $guardName);
+        }
+
+        // The refreshed token must still belong to the person this session was
+        // opened for. Anything else is not a renewal of this session.
+        if (! isset($callback['sub']) || $callback['sub'] !== $oauthData->oauth_id) {
             return $this->unauthorizeAndLogout($oauthData, $guardName);
         }
 

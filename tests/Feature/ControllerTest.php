@@ -201,6 +201,7 @@ it('renews the OAuth token if the user is authenticated and the token is expired
     $mockUser  = TestUser::factory()->create();
     $oauthData = OAuth::factory(state: [
         'user_id'                => $mockUser->id,
+        'oauth_id'               => '123456abc',
         'oauth_token'            => $newOAuthToken,
         'oauth_refresh_token'    => $newRefreshToken,
         'oauth_token_expires_at' => $newExpiredDate,
@@ -221,6 +222,7 @@ it('renews the OAuth token if the user is authenticated and the token is expired
 
     $mockOAuthService->shouldReceive('getResourceOwner')
         ->andReturn(Mockery::mock(['toArray' => [
+            'sub'    => '123456abc',
             'groups' => ['admin'],
         ]]));
 
@@ -255,6 +257,7 @@ it('logs out the user if there is an error during token renewal', function () {
     $mockUser = TestUser::factory()->create();
     OAuth::factory(state: [
         'user_id'                => $mockUser->id,
+        'oauth_id'               => '123456abc',
         'oauth_refresh_token'    => null,
         'oauth_token_expires_at' => Carbon::now()->subHour()->timestamp,
     ])->create();
@@ -302,6 +305,7 @@ it('logs out the user if offline_access is false during token renewal', function
     $mockUser = TestUser::factory()->create();
     OAuth::factory(state: [
         'user_id'                => $mockUser->id,
+        'oauth_id'               => '123456abc',
         'oauth_token_expires_at' => Carbon::now()->subHour()->timestamp,
     ])->create();
 

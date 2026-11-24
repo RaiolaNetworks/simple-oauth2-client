@@ -25,6 +25,7 @@ it('skips the database lookup and provider when the cached expiry is still valid
     // Expired token in the database: without the cache this would trigger a renewal.
     OAuth::factory(state: [
         'user_id'                => $mockUser->id,
+        'oauth_id'               => '123456abc',
         'oauth_token'            => 'some_token',
         'oauth_refresh_token'    => 'some_refresh_token',
         'oauth_token_expires_at' => Carbon::now()->subHour()->timestamp,
@@ -58,6 +59,7 @@ it('keeps the stored refresh token when the provider does not return a new one',
 
     $oauthData = OAuth::factory(state: [
         'user_id'                => $mockUser->id,
+        'oauth_id'               => '123456abc',
         'oauth_token'            => 'some_token',
         'oauth_refresh_token'    => 'some_refresh_token',
         'oauth_token_expires_at' => Carbon::now()->subHour()->timestamp,
@@ -103,6 +105,7 @@ it('stores the new refresh token when the provider rotates it', function () {
 
     $oauthData = OAuth::factory(state: [
         'user_id'                => $mockUser->id,
+        'oauth_id'               => '123456abc',
         'oauth_token'            => 'some_token',
         'oauth_refresh_token'    => 'some_refresh_token',
         'oauth_token_expires_at' => Carbon::now()->subHour()->timestamp,
@@ -140,6 +143,7 @@ it('logs the user out instead of calling the provider without a refresh token', 
 
     $oauthData = OAuth::factory(state: [
         'user_id'                => $mockUser->id,
+        'oauth_id'               => '123456abc',
         'oauth_token'            => 'some_token',
         'oauth_refresh_token'    => null,
         'oauth_token_expires_at' => Carbon::now()->subHour()->timestamp,
@@ -175,6 +179,7 @@ it('renews a token that expires within the safety margin', function () {
 
     OAuth::factory(state: [
         'user_id'                => $mockUser->id,
+        'oauth_id'               => '123456abc',
         'oauth_token'            => 'some_token',
         'oauth_refresh_token'    => 'some_refresh_token',
         'oauth_token_expires_at' => $expiringSoon,
@@ -214,4 +219,91 @@ it('caches the token expiry after a successful renewal', function () {
     $service->rememberExpiry($expiresAt);
 
     expect(Session::get(TokenRenewalService::EXPIRY_SESSION_KEY))->toBe($expiresAt);
+});
+
+/** @var TestCase $this */
+it('logs out when the refreshed token belongs to another subject', function (array $claims) {
+    Config::set('oauth.offline_access', true);
+
+    $mockUser = TestUser::factory()->create();
+
+    $oauthData = OAuth::factory(state: [
+        'user_id'                => $mockUser->id,
+        'oauth_id'               => '123456abc',
+        'oauth_token'            => 'some_token',
+        'oauth_refresh_token'    => 'some_refresh_token',
+        'oauth_token_expires_at' => Carbon::now()->subHour()->timestamp,
+    ])->create();
+
+    $mockAccessToken = Mockery::mock(AccessToken::class);
+    $mockAccessToken->shouldReceive('getToken')->andReturn('renewed_token');
+    $mockAccessToken->shouldReceive('getRefreshToken')->andReturn('rotated_refresh_token');
+    $mockAccessToken->shouldReceive('getExpires')->andReturn(Carbon::now()->addHour()->timestamp);
+
+    $mockOAuthService = Mockery::mock(OAuthService::class);
+    $mockOAuthService->shouldReceive('getAccessToken')->andReturn($mockAccessToken);
+    $mockOAuthService->shouldReceive('getResourceOwner')->andReturn(Mockery::mock(['toArray' => $claims]));
+    instance(OAuthService::class, $mockOAuthService);
+
+    $mockGuard = Mockery::mock(Guard::class, ['check' => true, 'user' => $mockUser]);
+    $mockGuard->shouldReceive('logout')->once();
+    Auth::shouldReceive('guard')->with(config('oauth.guard_name'))->andReturn($mockGuard);
+
+    $response = $this->app->make(TokenRenewalService::class)->renew();
+
+    expect($response?->getStatusCode())->toBe(302);
+
+    $oauthData->refresh();
+
+    expect($oauthData->oauth_token)->toBeNull()
+        ->and($oauthData->oauth_refresh_token)->toBeNull();
+
+    Mockery::close();
+})->with([
+    'other subject' => [['sub' => 'someone-else']],
+    'no subject'    => [[]],
+]);
+
+/** @var TestCase $this */
+it('renews the most recently used link when an account has several', function () {
+    Config::set('oauth.offline_access', true);
+
+    $mockUser = TestUser::factory()->create();
+    $expired  = Carbon::now()->subHour()->timestamp;
+
+    OAuth::factory(state: [
+        'user_id'                => $mockUser->id,
+        'oauth_id'               => 'stale-sub',
+        'oauth_refresh_token'    => 'stale_refresh_token',
+        'oauth_token_expires_at' => $expired,
+        'updated_at'             => Carbon::now()->subDay(),
+    ])->create();
+
+    OAuth::factory(state: [
+        'user_id'                => $mockUser->id,
+        'oauth_id'               => '123456abc',
+        'oauth_refresh_token'    => 'live_refresh_token',
+        'oauth_token_expires_at' => $expired,
+    ])->create();
+
+    $mockAccessToken = Mockery::mock(AccessToken::class);
+    $mockAccessToken->shouldReceive('getToken')->andReturn('renewed_token');
+    $mockAccessToken->shouldReceive('getRefreshToken')->andReturn('rotated_refresh_token');
+    $mockAccessToken->shouldReceive('getExpires')->andReturn(Carbon::now()->addHour()->timestamp);
+
+    $mockOAuthService = Mockery::mock(OAuthService::class);
+    $mockOAuthService->shouldReceive('getAccessToken')
+        ->with('refresh_token', ['refresh_token' => 'live_refresh_token'])
+        ->once()
+        ->andReturn($mockAccessToken);
+    $mockOAuthService->shouldReceive('getResourceOwner')->andReturn(Mockery::mock(['toArray' => ['sub' => '123456abc']]));
+    instance(OAuthService::class, $mockOAuthService);
+
+    Auth::shouldReceive('guard')
+        ->with(config('oauth.guard_name'))
+        ->andReturn(Mockery::mock(Guard::class, ['check' => true, 'user' => $mockUser]));
+
+    expect($this->app->make(TokenRenewalService::class)->renew())->toBeNull();
+
+    Mockery::close();
 });

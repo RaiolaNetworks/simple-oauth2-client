@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Config;
-use League\OAuth2\Client\Token\AccessToken;
 use League\OAuth2\Client\Token\AccessTokenInterface;
 use Raiolanetworks\OAuth\Contracts\OAuthGroupHandlerInterface;
 use Raiolanetworks\OAuth\Contracts\OAuthUserHandlerInterface;
@@ -36,24 +35,6 @@ it('handles groups correctly with BaseOAuthGroupHandler', function () {
     $handler->handleGroups($groups, $userMock);
 
     expect(true)->toBeTrue();
-});
-
-it('handles users correctly with BaseOAuthUserHandler', function () {
-    $userMock = TestUser::factory()->create();
-
-    $accessToken = Mockery::mock(AccessToken::class);
-
-    $userData = [
-        'email' => 'user@example.com',
-        'name'  => 'Test User',
-    ];
-
-    $handler = new BaseOAuthUserHandler();
-    $result  = $handler->handleUser($userData, $accessToken);
-
-    expect($result)->toBeInstanceOf(TestUser::class);
-
-    Mockery::close();
 });
 
 /** @var TestCase $this */

@@ -105,6 +105,14 @@ To achieve this, two interfaces have been created: [OAuthUserHandlerInterface](s
 
 There are also two predefined classes: [BaseOAuthUserHandler](src/Handlers/BaseOAuthUserHandler.php) and [BaseOAuthGroupHandler](src/Handlers/BaseOAuthGroupHandler.php), which implement these interfaces with default logic. These will serve as an example for the developer and will also help, if it is a simple application, for the package to work without having to overwrite anything.
 
+#### How the default user handler identifies people
+
+`BaseOAuthUserHandler` identifies the account by the provider subject (`sub`), which never changes, not by the email, which a person may be able to change in the provider. The email is only used the first time a subject logs in, to link it to an existing account, and only when the provider sends `email_verified: true` and that account is not linked to another subject yet. Otherwise the login is rejected rather than handing one person's account to whoever claims their email. A missing `sub` or an invalid email is rejected too.
+
+A verified email change in the provider is copied to the account, unless another account already uses that email. An unverified one is ignored.
+
+If you write your own user handler, keep the same rule: never resolve an account by email alone.
+
 **IMPORTANT**
 
 It is likely necessary to implement these interfaces to override the logic for handling the users and groups returned by the OAuth service.
